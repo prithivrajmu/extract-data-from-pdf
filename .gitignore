@@ -44,6 +44,26 @@ venv.bak/
 *_ocr_text.txt
 *_extracted.csv
 *_extracted.xlsx
+*_extracted.json
+*_extracted.md
+*_extracted.xls
+
+# Log files
+*.log
+*.log.*
+logs/
+
+# Output directories (if any)
+output/
+outputs/
+results/
+extracted_data/
+
+# Temporary files
+*.tmp
+*.temp
+.temp/
+tmp/
 
 # Jupyter Notebook
 .ipynb_checkpoints
