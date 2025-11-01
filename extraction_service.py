@@ -245,7 +245,9 @@ def extract_data(
     api_keys: Dict[str, str],
     model_name: Optional[str] = None,
     custom_fields: Optional[List[str]] = None,
-    local_model_options: Optional[Dict] = None
+    local_model_options: Optional[Dict] = None,
+    auto_detect_fields: bool = False,
+    detected_fields: Optional[List[str]] = None
 ) -> List[Dict[str, str]]:
     """
     Main router function that calls appropriate extraction method.
@@ -256,11 +258,37 @@ def extract_data(
         api_keys: Dictionary of API keys for different providers
         model_name: Optional model name (for HuggingFace)
         custom_fields: Optional list of custom field names to extract
+        local_model_options: Optional dict with 'use_cpu' and 'use_pretty' keys
+        auto_detect_fields: If True, automatically detect fields before extraction
+        detected_fields: Pre-detected field names (used if auto_detect_fields=False)
         
     Returns:
         List of extracted row dictionaries
     """
     method = method.lower()
+    
+    # Auto-detect fields if requested
+    if auto_detect_fields:
+        try:
+            from field_detector import detect_fields_from_pdf
+            detection_method = 'ai' if method in ['gemini', 'deepseek'] else 'ocr'
+            detected_fields_list = detect_fields_from_pdf(
+                pdf_path,
+                method=detection_method,
+                extraction_method=method,
+                api_keys=api_keys
+            )
+            if detected_fields_list:
+                # Use detected fields as custom_fields for AI methods, or store for OCR methods
+                if method in ['gemini', 'deepseek']:
+                    custom_fields = detected_fields_list
+                detected_fields = detected_fields_list
+        except Exception as e:
+            print(f"⚠️  Field detection failed: {e}. Proceeding with default fields.")
+    
+    # Use pre-detected fields if provided (and no custom_fields specified)
+    if detected_fields and not custom_fields and method in ['gemini', 'deepseek']:
+        custom_fields = detected_fields
     
     if method == 'local' or method == 'local_model':
         # Local model extraction (downloads model on first use)
@@ -316,7 +344,9 @@ def process_multiple_files(
     method: str,
     api_keys: Dict[str, str],
     model_name: Optional[str] = None,
-    progress_callback: Optional[Callable] = None
+    progress_callback: Optional[Callable] = None,
+    auto_detect_fields: bool = False,
+    field_detection_mode: str = 'unified'
 ) -> Dict[str, List[Dict[str, str]]]:
     """
     Process multiple PDF files sequentially.
@@ -327,10 +357,33 @@ def process_multiple_files(
         api_keys: Dictionary of API keys
         model_name: Optional model name
         progress_callback: Optional callback function for progress updates
+        auto_detect_fields: If True, automatically detect fields before extraction
+        field_detection_mode: 'unified' (detect once from first file) or 'per_file' (detect per-file)
         
     Returns:
         Dictionary mapping filename to list of extracted rows
     """
+    detected_fields = None
+    
+    # Auto-detect fields if requested
+    if auto_detect_fields and pdf_files:
+        try:
+            from field_detector import detect_fields_batch
+            detection_method = 'ai' if method in ['gemini', 'deepseek'] else 'ocr'
+            detection_result = detect_fields_batch(
+                pdf_files,
+                method=detection_method,
+                extraction_method=method,
+                api_keys=api_keys,
+                mode=field_detection_mode
+            )
+            detected_fields = detection_result.get('fields', [])
+            
+            if progress_callback and detected_fields:
+                progress_callback(0, len(pdf_files), f"Detected {len(detected_fields)} fields: {', '.join(detected_fields[:5])}...")
+        except Exception as e:
+            print(f"⚠️  Field detection failed: {e}. Proceeding with default fields.")
+    
     results = {}
     
     for i, pdf_path in enumerate(pdf_files):
@@ -340,7 +393,15 @@ def process_multiple_files(
             progress_callback(i + 1, len(pdf_files), f"Processing {filename}...")
         
         try:
-            rows = extract_data(pdf_path, method, api_keys, model_name)
+            # Pass detected_fields to extract_data
+            rows = extract_data(
+                pdf_path,
+                method,
+                api_keys,
+                model_name,
+                custom_fields=detected_fields if method in ['gemini', 'deepseek'] else None,
+                detected_fields=detected_fields
+            )
             results[filename] = rows
         except Exception as e:
             if progress_callback:

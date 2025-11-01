@@ -506,6 +506,30 @@ def main():
         st.markdown("---")
         st.subheader("📋 Field Selection")
         
+        # Auto-detect Fields Option
+        auto_detect_fields = st.checkbox(
+            "Auto-detect Fields",
+            value=False,
+            help="Automatically detect field names from PDF before extraction. Works best with AI-based methods (Gemini/Deepseek)."
+        )
+        
+        # Initialize detected fields in session state
+        if 'detected_fields' not in st.session_state:
+            st.session_state.detected_fields = None
+        if 'field_detection_mode' not in st.session_state:
+            st.session_state.field_detection_mode = 'unified'
+        
+        # Field Detection Mode (for multiple files)
+        if auto_detect_fields:
+            field_detection_mode = st.radio(
+                "Field Detection Mode (for multiple files):",
+                options=['unified', 'per_file'],
+                format_func=lambda x: 'Unified (detect once from first file)' if x == 'unified' else 'Per-file (detect from each file)',
+                index=0,
+                help="Unified: Detect fields once from the first file and use for all. Per-file: Detect from each file and merge."
+            )
+            st.session_state.field_detection_mode = field_detection_mode
+        
         # Custom Fields Input
         with st.expander("➕ Add Custom Fields", expanded=False):
             st.info("Define your own fields to extract. Enter one field name per line.")
@@ -585,6 +609,24 @@ def main():
         
         if not output_formats:
             st.warning("⚠️ Please select at least one output format")
+        
+        # JSON Format Selection (only shown if JSON is selected)
+        json_format = 'standard'
+        if "JSON" in output_formats:
+            st.markdown("#### JSON Format Options")
+            json_format = st.selectbox(
+                "JSON Format",
+                options=['standard', 'structured', 'multi_file', 'unified'],
+                format_func=lambda x: {
+                    'standard': 'Standard (array of records)',
+                    'structured': 'Structured (with metadata wrapper)',
+                    'multi_file': 'Multi-file (organized by filename)',
+                    'unified': 'Unified (metadata in each record)'
+                }.get(x, x),
+                index=0,
+                help="Choose how JSON data should be structured"
+            )
+            st.session_state.json_format = json_format
         
         # GPU Check Section
         st.markdown("---")
@@ -920,6 +962,7 @@ def main():
                     
                 all_results = []
                 temp_files = []
+                detected_fields = None
                 
                 try:
                     # Create temp directory
@@ -928,6 +971,74 @@ def main():
                     total_files = len(uploaded_files)
                     processed_files = 0
                     total_rows = 0
+                    
+                    # Field Detection Step (if enabled)
+                    if auto_detect_fields and uploaded_files:
+                        st.markdown("#### 🔍 Field Detection")
+                        with st.spinner("Detecting fields from PDF(s)..."):
+                            try:
+                                from field_detector import detect_fields_batch
+                                
+                                # Save files temporarily for detection
+                                temp_files_for_detection = []
+                                for uploaded_file in uploaded_files:
+                                    temp_path = save_uploaded_file(uploaded_file, temp_dir)
+                                    temp_files_for_detection.append(temp_path)
+                                
+                                detection_method = 'ai' if selected_method in ['gemini', 'deepseek'] else 'ocr'
+                                detection_result = detect_fields_batch(
+                                    temp_files_for_detection,
+                                    method=detection_method,
+                                    extraction_method=selected_method,
+                                    api_keys=api_keys_dict,
+                                    mode=st.session_state.get('field_detection_mode', 'unified')
+                                )
+                                
+                                detected_fields = detection_result.get('fields', [])
+                                per_file_fields = detection_result.get('per_file', {})
+                                
+                                if detected_fields:
+                                    st.success(f"✅ Detected {len(detected_fields)} fields")
+                                    st.session_state.detected_fields = detected_fields
+                                    
+                                    # Display detected fields
+                                    with st.expander("📋 View Detected Fields", expanded=True):
+                                        st.write("**Detected Fields:**")
+                                        for field in detected_fields:
+                                            st.write(f"  • {field}")
+                                        
+                                        # Show per-file comparison if per_file mode
+                                        if per_file_fields and len(per_file_fields) > 1:
+                                            st.markdown("---")
+                                            st.write("**Field Comparison by File:**")
+                                            comparison_data = []
+                                            for filename, fields in per_file_fields.items():
+                                                comparison_data.append({
+                                                    'Filename': filename,
+                                                    'Fields Count': len(fields),
+                                                    'Fields': ', '.join(fields[:5]) + ('...' if len(fields) > 5 else '')
+                                                })
+                                            st.dataframe(pd.DataFrame(comparison_data), use_container_width=True, hide_index=True)
+                                    
+                                    # Allow user to edit detected fields
+                                    edit_fields = st.checkbox("Edit Detected Fields", value=False)
+                                    if edit_fields:
+                                        edited_fields_text = st.text_area(
+                                            "Edit Fields (one per line):",
+                                            value='\n'.join(detected_fields),
+                                            height=150
+                                        )
+                                        if edited_fields_text:
+                                            detected_fields = [f.strip() for f in edited_fields_text.split('\n') if f.strip()]
+                                            st.session_state.detected_fields = detected_fields
+                                            st.success(f"✅ Updated to {len(detected_fields)} fields")
+                                else:
+                                    st.warning("⚠️ No fields detected. Using default fields.")
+                                    detected_fields = None
+                                    
+                            except Exception as e:
+                                st.warning(f"⚠️ Field detection failed: {e}. Proceeding with default fields.")
+                                detected_fields = None
                     
                     for i, uploaded_file in enumerate(uploaded_files):
                         filename = uploaded_file.name
@@ -953,9 +1064,12 @@ def main():
                             temp_file_path = save_uploaded_file(uploaded_file, temp_dir)
                             temp_files.append(temp_file_path)
                             
-                            # Get custom fields if specified
+                            # Get custom fields if specified (prioritize auto-detected fields)
                             extraction_fields = None
-                            if use_custom_fields and st.session_state.get('custom_fields'):
+                            if auto_detect_fields and detected_fields and selected_method in ['gemini', 'deepseek']:
+                                # Use auto-detected fields
+                                extraction_fields = detected_fields
+                            elif use_custom_fields and st.session_state.get('custom_fields'):
                                 extraction_fields = st.session_state.custom_fields
                             elif not use_custom_fields and st.session_state.get('custom_fields'):
                                 # Add custom fields to default selection
@@ -979,7 +1093,9 @@ def main():
                                     selected_method,
                                     api_keys_dict,
                                     hf_model if selected_method == 'huggingface' else None,
-                                    extraction_fields
+                                    extraction_fields,
+                                    auto_detect_fields=False,  # Already detected above
+                                    detected_fields=detected_fields if auto_detect_fields else None
                                 )
                             
                             all_results.extend(rows)
@@ -1042,6 +1158,7 @@ def main():
                     if all_results:
                         st.session_state.extraction_results = all_results
                         st.session_state.selected_output_formats = output_formats
+                        st.session_state.auto_detect_fields = auto_detect_fields
                     
                 except Exception as e:
                     st.error(f"❌ Processing error: {str(e)}")
@@ -1127,7 +1244,16 @@ def main():
                         download_data = excel_buffer
                     elif file_format == "json":
                         from utils import dataframe_to_json_string
-                        download_data = dataframe_to_json_string(df)
+                        # Get JSON format from session state (default to 'standard' for backward compatibility)
+                        json_format = st.session_state.get('json_format', 'standard')
+                        # Prepare metadata if needed
+                        metadata = None
+                        if json_format in ['structured', 'unified']:
+                            metadata = {
+                                'detected_fields': st.session_state.get('detected_fields'),
+                                'auto_detect_enabled': st.session_state.get('auto_detect_fields', False)
+                            }
+                        download_data = dataframe_to_json_string(df, format=json_format, metadata=metadata)
                     elif file_format == "md":
                         from utils import dataframe_to_markdown_string
                         download_data = dataframe_to_markdown_string(df)

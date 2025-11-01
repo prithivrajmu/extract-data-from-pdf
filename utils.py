@@ -4,9 +4,11 @@ Helper utilities for file handling, field filtering, and data formatting.
 """
 
 import os
+import json
 import pandas as pd
-from typing import List, Dict, Set, Tuple
+from typing import List, Dict, Set, Tuple, Optional
 from pathlib import Path
+from datetime import datetime
 
 
 def filter_fields(data: List[Dict], selected_fields: Set[str]) -> List[Dict]:
@@ -244,17 +246,35 @@ def save_dataframe_to_markdown(df: pd.DataFrame, output_path: str) -> bool:
         return False
 
 
-def dataframe_to_json_string(df: pd.DataFrame) -> str:
+def dataframe_to_json_string(df: pd.DataFrame, format: str = 'standard', metadata: Optional[Dict] = None) -> str:
     """
-    Convert DataFrame to JSON string.
+    Convert DataFrame to JSON string with multiple format options.
     
     Args:
         df: DataFrame to convert
+        format: JSON format ('standard', 'structured', 'multi_file', 'unified')
+        metadata: Optional metadata dictionary (used for structured/unified formats)
         
     Returns:
         JSON string
     """
-    return df.to_json(orient='records', indent=2, force_ascii=False)
+    format_lower = format.lower()
+    
+    if format_lower == 'standard':
+        # Default format - backward compatible
+        return df.to_json(orient='records', indent=2, force_ascii=False)
+    
+    elif format_lower == 'structured':
+        return create_structured_json_output(df, metadata)
+    
+    elif format_lower == 'multi_file':
+        return create_multi_file_json(df, metadata)
+    
+    elif format_lower == 'unified':
+        return create_unified_json(df, metadata)
+    
+    else:
+        raise ValueError(f"Unknown JSON format: {format}. Use 'standard', 'structured', 'multi_file', or 'unified'.")
 
 
 def dataframe_to_markdown_string(df: pd.DataFrame) -> str:
@@ -289,4 +309,123 @@ def dataframe_to_markdown_string(df: pd.DataFrame) -> str:
         md_lines.append(row_line)
     
     return '\n'.join(md_lines)
+
+
+def create_structured_json_output(df: pd.DataFrame, metadata: Optional[Dict] = None) -> str:
+    """
+    Create structured JSON output with metadata wrapper.
+    
+    Args:
+        df: DataFrame to convert
+        metadata: Optional metadata dictionary
+        
+    Returns:
+        JSON string with metadata and data
+    """
+    # Prepare metadata
+    if metadata is None:
+        metadata = {}
+    
+    # Add default metadata
+    default_metadata = {
+        'extraction_timestamp': datetime.now().isoformat(),
+        'total_rows': len(df),
+        'fields': list(df.columns),
+        'files_processed': df['filename'].nunique() if 'filename' in df.columns else 0
+    }
+    
+    # Merge with provided metadata
+    final_metadata = {**default_metadata, **metadata}
+    
+    # Convert DataFrame to records
+    data = df.to_dict(orient='records')
+    
+    # Create structured output
+    output = {
+        'metadata': final_metadata,
+        'data': data
+    }
+    
+    return json.dumps(output, indent=2, ensure_ascii=False)
+
+
+def create_multi_file_json(df: pd.DataFrame, metadata: Optional[Dict] = None) -> str:
+    """
+    Create multi-file JSON output organized by filename.
+    
+    Args:
+        df: DataFrame to convert (must have 'filename' column for multi-file support)
+        metadata: Optional metadata dictionary
+        
+    Returns:
+        JSON string organized by filename
+    """
+    if 'filename' not in df.columns:
+        # If no filename column, fallback to structured format
+        return create_structured_json_output(df, metadata)
+    
+    # Group by filename
+    file_data = {}
+    for filename in df['filename'].unique():
+        file_df = df[df['filename'] == filename]
+        file_data[filename] = file_df.to_dict(orient='records')
+    
+    # Prepare metadata
+    if metadata is None:
+        metadata = {}
+    
+    default_metadata = {
+        'extraction_timestamp': datetime.now().isoformat(),
+        'total_files': len(file_data),
+        'total_rows': len(df),
+        'fields': list(df.columns)
+    }
+    
+    final_metadata = {**default_metadata, **metadata}
+    
+    # Create multi-file output
+    output = {
+        **file_data,
+        'metadata': final_metadata
+    }
+    
+    return json.dumps(output, indent=2, ensure_ascii=False)
+
+
+def create_unified_json(df: pd.DataFrame, metadata: Optional[Dict] = None) -> str:
+    """
+    Create unified JSON output with metadata embedded in each record.
+    
+    Args:
+        df: DataFrame to convert
+        metadata: Optional metadata dictionary (will be embedded in each row)
+        
+    Returns:
+        JSON string with metadata in each record
+    """
+    # Prepare metadata
+    if metadata is None:
+        metadata = {}
+    
+    # Add default metadata
+    default_metadata = {
+        'extraction_timestamp': datetime.now().isoformat(),
+        'total_rows': len(df),
+        'fields': list(df.columns)
+    }
+    
+    final_metadata = {**default_metadata, **metadata}
+    
+    # Convert DataFrame to records and add metadata to each
+    records = df.to_dict(orient='records')
+    unified_records = []
+    
+    for record in records:
+        unified_record = {
+            **record,
+            '_metadata': final_metadata
+        }
+        unified_records.append(unified_record)
+    
+    return json.dumps(unified_records, indent=2, ensure_ascii=False)
 
