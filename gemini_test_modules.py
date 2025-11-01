@@ -2,10 +2,12 @@
 """
 Advanced Gemini API testing modules for Streamlit UI.
 Wraps the test scripts for use in the web interface.
+
+Test files should be placed in the test_file/ directory.
 """
 
 import os
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -125,7 +127,7 @@ def test_gemini_basic(api_key: str) -> Tuple[bool, Dict]:
         return False, results
 
 
-def test_gemini_file_upload(api_key: str, test_pdf_path: str = None) -> Tuple[bool, Dict]:
+def test_gemini_file_upload(api_key: str, test_pdf_path: Optional[str] = None) -> Tuple[bool, Dict]:
     """
     Test Gemini with file upload.
     Based on test_gemini_file_upload.py
@@ -152,11 +154,23 @@ def test_gemini_file_upload(api_key: str, test_pdf_path: str = None) -> Tuple[bo
     
     # Find a test PDF file
     if not test_pdf_path:
-        test_locations = [
+        # Check test_file directory first (primary test directory)
+        test_file_dir = "test_file"
+        test_locations = []
+        
+        # Add files from test_file directory
+        if os.path.exists(test_file_dir):
+            for file in os.listdir(test_file_dir):
+                if file.lower().endswith('.pdf'):
+                    test_locations.append(os.path.join(test_file_dir, file))
+        
+        # Fallback to other locations
+        test_locations.extend([
             "ec/RG EC 103 4.pdf",
             "ec/RG EC 103 3.pdf",
             "ec2/EC 24.pdf",
-        ]
+        ])
+        
         test_pdf_path = None
         for loc in test_locations:
             if os.path.exists(loc):
@@ -164,7 +178,7 @@ def test_gemini_file_upload(api_key: str, test_pdf_path: str = None) -> Tuple[bo
                 break
         
         if not test_pdf_path:
-            results['errors'].append('No test PDF file found')
+            results['errors'].append('No test PDF file found. Please add a PDF file to the test_file/ directory.')
             return False, results
     
     if not os.path.exists(test_pdf_path):
@@ -284,7 +298,7 @@ def test_gemini_file_upload(api_key: str, test_pdf_path: str = None) -> Tuple[bo
         return False, results
 
 
-def test_gemini_json_upload(api_key: str, test_pdf_path: str = None) -> Tuple[bool, Dict]:
+def test_gemini_json_upload(api_key: str, test_pdf_path: Optional[str] = None) -> Tuple[bool, Dict]:
     """
     Test Gemini with file upload + JSON output.
     Based on test_gemini_json_upload.py
@@ -311,11 +325,23 @@ def test_gemini_json_upload(api_key: str, test_pdf_path: str = None) -> Tuple[bo
     
     # Find a test PDF file
     if not test_pdf_path:
-        test_locations = [
+        # Check test_file directory first (primary test directory)
+        test_file_dir = "test_file"
+        test_locations = []
+        
+        # Add files from test_file directory
+        if os.path.exists(test_file_dir):
+            for file in os.listdir(test_file_dir):
+                if file.lower().endswith('.pdf'):
+                    test_locations.append(os.path.join(test_file_dir, file))
+        
+        # Fallback to other locations
+        test_locations.extend([
             "ec/RG EC 103 4.pdf",
             "ec/RG EC 103 3.pdf",
             "ec2/EC 24.pdf",
-        ]
+        ])
+        
         test_pdf_path = None
         for loc in test_locations:
             if os.path.exists(loc):
@@ -323,7 +349,7 @@ def test_gemini_json_upload(api_key: str, test_pdf_path: str = None) -> Tuple[bo
                 break
         
         if not test_pdf_path:
-            results['errors'].append('No test PDF file found')
+            results['errors'].append('No test PDF file found. Please add a PDF file to the test_file/ directory.')
             return False, results
     
     if not os.path.exists(test_pdf_path):

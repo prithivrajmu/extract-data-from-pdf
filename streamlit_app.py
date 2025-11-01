@@ -488,6 +488,18 @@ def main():
         
         with st.expander("Gemini API Tests", expanded=False):
             st.info("Run advanced tests to verify your Gemini API setup")
+            st.caption("💡 Test PDFs should be placed in the `test_file/` directory")
+            
+            # Show available test files
+            test_file_dir = "test_file"
+            if os.path.exists(test_file_dir):
+                test_files = [f for f in os.listdir(test_file_dir) if f.lower().endswith('.pdf')]
+                if test_files:
+                    st.success(f"✅ Found {len(test_files)} test file(s): {', '.join(test_files)}")
+                else:
+                    st.warning("⚠️ No PDF files found in `test_file/` directory")
+            else:
+                st.info("ℹ️ `test_file/` directory not found. Tests will use fallback locations")
             
             # Check if Gemini API key is available
             gemini_key = gem_api_key or st.session_state.api_keys.get('gemini', '')
@@ -523,7 +535,7 @@ def main():
                             st.session_state.gemini_test_basic = results
                 
                 with col2:
-                    if st.button("Test 2: File Upload", use_container_width=True, help="Test PDF file upload and processing"):
+                    if st.button("Test 2: File Upload", use_container_width=True, help="Test PDF file upload and processing (uses test_file/ directory)"):
                         with st.spinner("Testing file upload (this may take 30-60 seconds)..."):
                             success, results = test_gemini_file_upload(gemini_key)
                             
@@ -550,7 +562,7 @@ def main():
                             st.session_state.gemini_test_file_upload = results
                 
                 with col3:
-                    if st.button("Test 3: JSON Upload", use_container_width=True, help="Test PDF upload with JSON output format"):
+                    if st.button("Test 3: JSON Upload", use_container_width=True, help="Test PDF upload with JSON output format (uses test_file/ directory)"):
                         with st.spinner("Testing JSON output with file upload (this may take 30-60 seconds)..."):
                             success, results = test_gemini_json_upload(gemini_key)
                             
