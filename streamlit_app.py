@@ -600,25 +600,47 @@ def main():
             # Select all / Deselect all buttons
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("Select All", use_container_width=True):
+                if st.button("Select All", use_container_width=True, key="select_all_fields"):
+                    # Update selected fields
                     st.session_state.selected_fields = set(default_fields)
+                    # Update individual checkbox widget states
+                    for field in default_fields:
+                        st.session_state[f"field_{field}"] = True
+                    st.rerun()
             with col2:
-                if st.button("Deselect All", use_container_width=True):
-                    st.session_state.selected_fields = {'filename'}  # Always keep filename
+                if st.button("Deselect All", use_container_width=True, key="deselect_all_fields"):
+                    # Update selected fields - always keep filename
+                    st.session_state.selected_fields = {'filename'}
+                    # Update individual checkbox widget states
+                    for field in default_fields:
+                        if field == 'filename':
+                            st.session_state[f"field_{field}"] = True
+                        else:
+                            st.session_state[f"field_{field}"] = False
+                    st.rerun()
             
-            # Field checkboxes
+            # Field checkboxes - sync with session state
             for field in default_fields:
+                # Read from session state (either from selected_fields or widget state)
                 checked = field in st.session_state.selected_fields
                 disabled = field == 'filename'  # Always include filename
                 description = field_descriptions.get(field, '')
                 
-                if st.checkbox(
+                # Use widget state if available, otherwise use selected_fields
+                widget_key = f"field_{field}"
+                if widget_key in st.session_state:
+                    checked = st.session_state[widget_key]
+                
+                checkbox_value = st.checkbox(
                     field,
                     value=checked,
                     disabled=disabled,
                     help=description,
-                    key=f"field_{field}"
-                ):
+                    key=widget_key
+                )
+                
+                # Sync widget state back to selected_fields
+                if checkbox_value:
                     st.session_state.selected_fields.add(field)
                 else:
                     if not disabled:
