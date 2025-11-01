@@ -47,22 +47,32 @@ Generated: 2025
 
 ## ⚠️ Issues Found & Recommendations
 
-### 1. Hardcoded Test Paths in CLI Scripts
-**Status:** ⚠️ Minor - Acceptable for examples
+### 1. Example CLI Scripts
+**Status:** ✅ Resolved - Reorganized as example modules with CLI support
 
-**Location:** Multiple CLI scripts have hardcoded paths:
-- `extract_ec_data.py` - Line 350: `pdf_file = "ec/RG EC 103 3.pdf"`
-- `extract_ec_data_cpu.py` - Line 329: `pdf_file = "ec/RG EC 103 3.pdf"`
-- `extract_ec_data_pretty.py` - Line 530: `pdf_file = "ec/RG EC 103 3.pdf"`
-- `extract_ec_data_api.py` - Line 278: `pdf_file = "ec/RG EC 103 3.pdf"`
-- `extract_ec_data_hf_api.py` - Line 346: `pdf_file = "ec/RG EC 103 3.pdf"`
-- `extract_ec_data_easyocr.py` - Line 561: `pdf_file = "ec/RG EC 103 3.pdf"`
+**Location:** All example scripts have been moved to `examples/` directory:
+- `examples/extract_ec_data.py` - Uses Chandra OCR (GPU/CPU automatic)
+- `examples/extract_ec_data_cpu.py` - Forces CPU-only mode
+- `examples/extract_ec_data_pretty.py` - Formatted output version
+- `examples/extract_ec_data_api.py` - Datalab Marker API
+- `examples/extract_ec_data_hf_api.py` - HuggingFace Inference API
+- `examples/extract_ec_data_easyocr.py` - EasyOCR fast CPU mode
 
-**Recommendation:** 
-- ✅ **Acceptable** - These are example/test paths for CLI scripts
-- ✅ Users will modify these when running locally
-- ✅ Streamlit app uses uploaded files (no hardcoded paths)
-- Consider adding comment: `# Example path - modify as needed`
+**Changes Made:**
+- ✅ All scripts moved to `examples/` directory as example modules
+- ✅ Added argparse CLI support with `--file`/`--input` arguments
+- ✅ Default path changed from `ec/RG EC 103 3.pdf` to `test_file/RG EC 103 3.pdf`
+- ✅ Path resolution handles absolute paths, relative paths, and project-relative paths
+- ✅ Added `examples/README.md` with usage documentation
+
+**Usage:**
+```bash
+# Use default test file
+python examples/extract_ec_data.py
+
+# Use custom file
+python examples/extract_ec_data.py --file path/to/file.pdf
+```
 
 ### 2. Log File Present
 **Status:** ❌ **Should be deleted**

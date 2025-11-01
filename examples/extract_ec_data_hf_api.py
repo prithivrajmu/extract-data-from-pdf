@@ -12,6 +12,7 @@ Documentation: https://huggingface.co/docs/inference-providers
 import os
 import re
 import time
+import argparse
 from pathlib import Path
 import pandas as pd
 from typing import List, Dict, Optional
@@ -337,17 +338,48 @@ def extract_data_from_pdf(pdf_path: str, api_key: Optional[str] = None) -> List[
 
 def main():
     """Main function."""
+    parser = argparse.ArgumentParser(
+        description='Extract data from EC PDF files using HuggingFace Inference Providers API',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='''
+Examples:
+  %(prog)s                                    # Use default test file
+  %(prog)s --file path/to/file.pdf           # Use custom PDF file
+  %(prog)s --input path/to/file.pdf          # Alternative syntax
+        '''
+    )
+    parser.add_argument(
+        '--file', '--input',
+        dest='pdf_file',
+        default='test_file/RG EC 103 3.pdf',
+        help='Path to the PDF file to process (default: test_file/RG EC 103 3.pdf)'
+    )
+    
+    args = parser.parse_args()
+    pdf_file = args.pdf_file
+    
+    # Convert to absolute path if relative
+    if not os.path.isabs(pdf_file):
+        if not os.path.exists(pdf_file):
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            parent_dir = os.path.dirname(script_dir)
+            test_path = os.path.join(parent_dir, pdf_file)
+            if os.path.exists(test_path):
+                pdf_file = test_path
+            else:
+                project_root = os.path.dirname(script_dir)
+                pdf_file = os.path.join(project_root, pdf_file)
+    
+    if not os.path.exists(pdf_file):
+        print(f"❌ Error: File {pdf_file} not found!")
+        print(f"Please check the path and try again.")
+        return
+    
     # Get API key from .env file (loaded by load_dotenv()) or environment variables
     api_key = (
         os.environ.get('HF_API_KEY') or 
         os.environ.get('HUGGINGFACE_API_TOKEN')
     )
-    
-    pdf_file = "ec/RG EC 103 3.pdf"
-    
-    if not os.path.exists(pdf_file):
-        print(f"❌ Error: File {pdf_file} not found!")
-        return
     
     print("=" * 70)
     print(" " * 20 + "EC Data Extraction (HF API Mode)")

@@ -155,9 +155,11 @@ For script-based automation, you can use the CLI scripts directly.
 Make sure your virtual environment is activated:
 ```bash
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-python extract_ec_data_cpu.py  # CPU-only version
+python examples/extract_ec_data_cpu.py  # CPU-only version
 # or
-python extract_ec_data.py     # Auto-detects GPU if available
+python examples/extract_ec_data.py      # Auto-detects GPU if available
+# Use custom file:
+python examples/extract_ec_data.py --file path/to/your/file.pdf
 ```
 
 ### Option 2: Using Datalab API (No Local Model Required)
@@ -171,7 +173,9 @@ Uses Datalab Marker API - no need to download models locally!
    ```
 3. Run the API script:
    ```bash
-   python extract_ec_data_api.py
+   python examples/extract_ec_data_api.py
+   # Or with custom file:
+   python examples/extract_ec_data_api.py --file path/to/your/file.pdf
    ```
 
 **Benefits of Datalab API:**
@@ -196,7 +200,9 @@ If you encounter errors, use Option 2 (Datalab API) instead.
    ```
 3. Run the HF API script:
    ```bash
-   python extract_ec_data_hf_api.py
+   python examples/extract_ec_data_hf_api.py
+   # Or with custom file:
+   python examples/extract_ec_data_hf_api.py --file path/to/your/file.pdf
    ```
 
 **Documentation:** https://huggingface.co/docs/inference-providers
