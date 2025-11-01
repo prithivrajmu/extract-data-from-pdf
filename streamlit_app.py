@@ -36,6 +36,11 @@ from gemini_test_modules import (
     test_gemini_file_upload,
     test_gemini_json_upload
 )
+from model_info import (
+    get_local_ocr_models,
+    get_huggingface_ocr_models,
+    get_model_search_url
+)
 
 # Page configuration
 st.set_page_config(
@@ -147,21 +152,99 @@ def main():
         st.subheader("🔧 Extraction Method")
         ocr_method = st.radio(
             "Select extraction method",
-            options=["EasyOCR", "HuggingFace", "Datalab API", "Gemini AI", "Deepseek AI"],
+            options=["EasyOCR", "Local Model", "HuggingFace", "Datalab API", "Gemini AI", "Deepseek AI"],
             index=0,
             label_visibility="collapsed"
         )
+        
+        # Local Model Selection
+        local_model = None
+        use_cpu_mode = False
+        use_pretty_output = False
+        
+        if ocr_method == "Local Model":
+            st.markdown("---")
+            st.subheader("🖥️ Local Model Configuration")
+            st.info("📥 Models will be downloaded automatically on first use (~2GB for Chandra)")
+            
+            # Model selection
+            local_models = get_local_ocr_models()
+            model_options = [f"{m['name']} ({m['id']})" for m in local_models]
+            model_ids = [m['id'] for m in local_models]
+            
+            selected_model_idx = st.selectbox(
+                "Select OCR Model",
+                range(len(model_options)),
+                format_func=lambda x: model_options[x],
+                help="Choose which OCR model to download and use locally"
+            )
+            local_model = model_ids[selected_model_idx]
+            
+            # Show model info
+            selected_model_info = local_models[selected_model_idx]
+            with st.expander(f"ℹ️ About {selected_model_info['name']}"):
+                st.write(f"**Description:** {selected_model_info['description']}")
+                st.write(f"**Model Size:** {selected_model_info['size']}")
+                st.write(f"**Download Time:** {selected_model_info['download_time']}")
+                st.write(f"**GPU Support:** {'Yes' if selected_model_info.get('supports_gpu') else 'No'}")
+                st.write(f"**CPU Support:** {'Yes' if selected_model_info.get('supports_cpu') else 'No'}")
+                st.markdown(f"**Model Page:** [{selected_model_info['name']}]({selected_model_info['url']})")
+            
+            # Options for Chandra model
+            if local_model == 'datalab-to/chandra':
+                use_cpu_mode = st.checkbox(
+                    "Force CPU Mode",
+                    value=False,
+                    help="Force CPU usage even if GPU is available (slower but more stable)"
+                )
+                use_pretty_output = st.checkbox(
+                    "Use Formatted Output",
+                    value=False,
+                    help="Use human-readable output formatting (filters technical details)"
+                )
         
         # HuggingFace Model Selection
         hf_model = None
         if ocr_method == "HuggingFace":
             st.markdown("---")
             st.subheader("🤗 Model Selection")
-            hf_model = st.text_input(
-                "HuggingFace Model",
-                value="datalab-to/chandra",
-                help="Enter the HuggingFace model name (e.g., datalab-to/chandra)"
+            
+            # Show available models
+            hf_models = get_huggingface_ocr_models()
+            hf_model_options = [f"{m['name']} ({m['id']})" for m in hf_models]
+            hf_model_ids = [m['id'] for m in hf_models]
+            
+            selected_hf_idx = st.selectbox(
+                "Select HuggingFace Model",
+                range(len(hf_model_options)),
+                format_func=lambda x: hf_model_options[x],
+                index=0,  # Default to Chandra
+                help="Choose which HuggingFace model to use via API"
             )
+            hf_model = hf_model_ids[selected_hf_idx]
+            
+            # Show model info and link
+            selected_hf_info = hf_models[selected_hf_idx]
+            with st.expander(f"ℹ️ About {selected_hf_info['name']}"):
+                st.write(f"**Description:** {selected_hf_info['description']}")
+                st.write(f"**API Compatible:** {'Yes' if selected_hf_info.get('api_compatible') else 'No'}")
+                if selected_hf_info.get('note'):
+                    st.info(f"**Note:** {selected_hf_info['note']}")
+                st.markdown(f"**Model Page:** [{selected_hf_info['name']}]({selected_hf_info['url']})")
+            
+            # Link to browse more models
+            st.markdown(f"[🔍 Browse more OCR models on HuggingFace]({get_model_search_url()})")
+            
+            # Fallback: allow manual entry
+            st.markdown("**Or enter custom model name:**")
+            custom_model = st.text_input(
+                "Custom Model Name",
+                value="",
+                placeholder="username/model-name",
+                help="Enter a custom HuggingFace model name"
+            )
+            if custom_model:
+                hf_model = custom_model
         
         # API Key Management Section
         st.markdown("---")
@@ -683,6 +766,7 @@ def main():
             # Map method names
             method_map = {
                 'EasyOCR': 'easyocr',
+                'Local Model': 'local',
                 'HuggingFace': 'huggingface',
                 'Datalab API': 'datalab',
                 'Gemini AI': 'gemini',
@@ -691,7 +775,10 @@ def main():
             selected_method = method_map[ocr_method]
             
             # Check API key requirements
-            if selected_method == 'huggingface' and not api_keys_dict.get('huggingface'):
+            if selected_method == 'local':
+                # No API key needed for local models
+                pass
+            elif selected_method == 'huggingface' and not api_keys_dict.get('huggingface'):
                 st.error("❌ HuggingFace API key is required for this method")
             elif selected_method == 'datalab' and not api_keys_dict.get('datalab'):
                 st.error("❌ Datalab API key is required for this method")
@@ -757,14 +844,25 @@ def main():
                                 extraction_fields = list(st.session_state.selected_fields)
                             
                             # Extract data
-                            details_text.markdown(f"🔍 Extracting data from PDF (this may take 30-60 seconds)...")
-                            rows = extract_data(
-                                temp_file_path,
-                                selected_method,
-                                api_keys_dict,
-                                hf_model if selected_method == 'huggingface' else None,
-                                extraction_fields
-                            )
+                            if selected_method == 'local':
+                                details_text.markdown(f"🔍 Extracting data using local model: {local_model} (first run may take 10-20 minutes to download model)...")
+                                # For local models, we need to pass model name and options
+                                from extraction_service import extract_with_local_model
+                                rows = extract_with_local_model(
+                                    temp_file_path,
+                                    local_model or 'datalab-to/chandra',
+                                    use_cpu=use_cpu_mode,
+                                    use_pretty=use_pretty_output
+                                )
+                            else:
+                                details_text.markdown(f"🔍 Extracting data from PDF (this may take 30-60 seconds)...")
+                                rows = extract_data(
+                                    temp_file_path,
+                                    selected_method,
+                                    api_keys_dict,
+                                    hf_model if selected_method == 'huggingface' else None,
+                                    extraction_fields
+                                )
                             
                             all_results.extend(rows)
                             processed_files += 1

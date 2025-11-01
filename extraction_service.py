@@ -9,6 +9,44 @@ from typing import List, Dict, Optional, Callable
 from pathlib import Path
 
 
+def extract_with_local_model(pdf_path: str, model_name: str = 'datalab-to/chandra', use_cpu: bool = False, use_pretty: bool = False) -> List[Dict[str, str]]:
+    """
+    Extract data using local OCR model (Chandra or CPU variant).
+    
+    Args:
+        pdf_path: Path to PDF file
+        model_name: Model name/identifier (currently only 'datalab-to/chandra' supported)
+        use_cpu: If True, force CPU mode
+        use_pretty: If True, use pretty output formatter
+        
+    Returns:
+        List of extracted row dictionaries
+    """
+    if use_cpu:
+        from extract_ec_data_cpu import extract_data_from_pdf
+    elif use_pretty:
+        from extract_ec_data_pretty import extract_data_from_pdf
+    else:
+        from extract_ec_data import extract_data_from_pdf
+    
+    rows = extract_data_from_pdf(pdf_path)
+    
+    # Normalize field names
+    normalized_rows = []
+    for row in rows:
+        if 'Plot No./' in row:
+            row['Plot No.'] = row.pop('Plot No./')
+        if 'Survey No./' in row:
+            row['Survey No.'] = row.pop('Survey No./')
+        if 'Plot No' in row and 'Plot No.' not in row:
+            row['Plot No.'] = row.pop('Plot No')
+        if 'Survey No' in row and 'Survey No.' not in row:
+            row['Survey No.'] = row.pop('Survey No')
+        normalized_rows.append(row)
+    
+    return normalized_rows
+
+
 def extract_with_easyocr(pdf_path: str) -> List[Dict[str, str]]:
     """
     Extract data using EasyOCR.
@@ -141,7 +179,8 @@ def extract_data(
     method: str,
     api_keys: Dict[str, str],
     model_name: Optional[str] = None,
-    custom_fields: Optional[List[str]] = None
+    custom_fields: Optional[List[str]] = None,
+    local_model_options: Optional[Dict] = None
 ) -> List[Dict[str, str]]:
     """
     Main router function that calls appropriate extraction method.
@@ -158,7 +197,17 @@ def extract_data(
     """
     method = method.lower()
     
-    if method == 'easyocr':
+    if method == 'local' or method == 'local_model':
+        # Local model extraction (downloads model on first use)
+        options = local_model_options or {}
+        return extract_with_local_model(
+            pdf_path,
+            model_name or 'datalab-to/chandra',
+            use_cpu=options.get('use_cpu', False),
+            use_pretty=options.get('use_pretty', False)
+        )
+    
+    elif method == 'easyocr':
         # EasyOCR doesn't support custom fields dynamically, returns all fields
         return extract_with_easyocr(pdf_path)
     
