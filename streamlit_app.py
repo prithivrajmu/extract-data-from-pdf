@@ -125,6 +125,9 @@ def initialize_session_state():
     
     if 'custom_fields' not in st.session_state:
         st.session_state.custom_fields = []
+    
+    if 'selected_ocr_method' not in st.session_state:
+        st.session_state.selected_ocr_method = 'EasyOCR'
 
 
 def load_saved_api_keys():
@@ -152,7 +155,7 @@ def main():
         # OCR Method Selection
         st.subheader("🔧 Extraction Method")
         
-        # Define methods with tooltips/descriptions
+        # Define methods with tooltips/descriptions and extraction types
         method_descriptions = {
             "EasyOCR": "Fast CPU-based OCR using EasyOCR library. Lightweight (~100MB models), quick setup, good for simple text extraction. No API key needed.",
             "PyTesseract": "Google's Tesseract OCR engine via PyTesseract. Fast, lightweight, works well for text-based PDFs. Requires Tesseract-OCR installed on system.",
@@ -163,20 +166,44 @@ def main():
             "Deepseek AI": "Deepseek AI for document extraction with vision capabilities. Can extract custom fields. Requires Deepseek API key."
         }
         
-        # Create selectbox with formatted labels that include descriptions
-        method_options = list(method_descriptions.keys())
+        # Define extraction types for each method (shown in dropdown)
+        method_types = {
+            "EasyOCR": "CPU OCR",
+            "PyTesseract": "OCR",
+            "Local Model": "Local OCR",
+            "HuggingFace": "Cloud OCR",
+            "Datalab API": "Cloud OCR",
+            "Gemini AI": "AI Extraction",
+            "Deepseek AI": "AI Extraction"
+        }
         
-        ocr_method = st.selectbox(
+        # Create formatted options with extraction type visible in dropdown
+        method_options_raw = list(method_descriptions.keys())
+        method_options_formatted = [f"{method} ({method_types.get(method, '')})" for method in method_options_raw]
+        
+        # Create mapping from formatted to raw method names
+        method_mapping = dict(zip(method_options_formatted, method_options_raw))
+        
+        # Get current selection index
+        current_method = st.session_state.get('selected_ocr_method', method_options_raw[0])
+        current_index = method_options_raw.index(current_method) if current_method in method_options_raw else 0
+        
+        selected_formatted = st.selectbox(
             "Select extraction method",
-            options=method_options,
-            index=0,
-            help="Choose an OCR method. Hover over each option to see details, or see description below.",
+            options=method_options_formatted,
+            index=current_index,
+            help="Choose an extraction method. The type (OCR/AI) is shown in parentheses. See description below for details.",
             key="ocr_method_select"
         )
         
+        # Extract actual method name from formatted selection
+        ocr_method = method_mapping.get(selected_formatted, method_options_raw[0])
+        st.session_state.selected_ocr_method = ocr_method
+        
         # Show detailed description for selected method with info box
         if ocr_method in method_descriptions:
-            st.info(f"**{ocr_method}:** {method_descriptions[ocr_method]}")
+            extraction_type = method_types.get(ocr_method, "")
+            st.info(f"**{ocr_method} ({extraction_type}):** {method_descriptions[ocr_method]}")
         
         # Local Model Selection
         local_model = None
@@ -367,140 +394,148 @@ def main():
         st.markdown("---")
         st.subheader("🔑 API Keys")
         
-        # Show storage info
-        with st.expander("ℹ️ About API Key Storage"):
-            st.info(get_storage_info())
+        # Initialize API key variables (even when menu is hidden, they're still used in code)
+        hf_api_key = st.session_state.api_keys.get('huggingface', '')
+        dl_api_key = st.session_state.api_keys.get('datalab', '')
+        gem_api_key = st.session_state.api_keys.get('gemini', '')
+        ds_api_key = st.session_state.api_keys.get('deepseek', '')
         
-        # HuggingFace API Key
-        st.markdown("#### HuggingFace API Key")
-        hf_key_col1, hf_key_col2 = st.columns([3, 1])
-        with hf_key_col1:
-            hf_api_key = st.text_input(
-                "HF API Key",
-                value=st.session_state.api_keys.get('huggingface', ''),
-                type="password",
-                key="hf_key_input",
-                label_visibility="collapsed"
-            )
-        with hf_key_col2:
-            if st.button("Test", key="test_hf", use_container_width=True):
-                if hf_api_key:
-                    with st.spinner("Testing..."):
-                        success, message = test_huggingface_api_key(hf_api_key)
-                        st.session_state.api_key_tests['huggingface'] = (success, message)
-                        if success:
-                            st.session_state.api_keys['huggingface'] = hf_api_key
+        # Use expander similar to Advanced Testing section
+        with st.expander("API Key Configuration", expanded=False):
+            # Show storage info
+            with st.expander("ℹ️ About API Key Storage"):
+                st.info(get_storage_info())
+            
+            # HuggingFace API Key
+            st.markdown("#### HuggingFace API Key")
+            hf_key_col1, hf_key_col2 = st.columns([3, 1])
+            with hf_key_col1:
+                hf_api_key = st.text_input(
+                    "HF API Key",
+                    value=hf_api_key,
+                    type="password",
+                    key="hf_key_input",
+                    label_visibility="collapsed"
+                )
+            with hf_key_col2:
+                if st.button("Test", key="test_hf", use_container_width=True):
+                    if hf_api_key:
+                        with st.spinner("Testing..."):
+                            success, message = test_huggingface_api_key(hf_api_key)
+                            st.session_state.api_key_tests['huggingface'] = (success, message)
+                            if success:
+                                st.session_state.api_keys['huggingface'] = hf_api_key
+                    else:
+                        st.session_state.api_key_tests['huggingface'] = (False, "Please enter an API key")
+            
+            if 'huggingface' in st.session_state.api_key_tests:
+                success, msg = st.session_state.api_key_tests['huggingface']
+                if success:
+                    st.success(msg)
                 else:
-                    st.session_state.api_key_tests['huggingface'] = (False, "Please enter an API key")
-        
-        if 'huggingface' in st.session_state.api_key_tests:
-            success, msg = st.session_state.api_key_tests['huggingface']
-            if success:
-                st.success(msg)
-            else:
-                st.error(msg)
-        
-        # Datalab API Key
-        st.markdown("#### Datalab API Key")
-        dl_key_col1, dl_key_col2 = st.columns([3, 1])
-        with dl_key_col1:
-            dl_api_key = st.text_input(
-                "Datalab API Key",
-                value=st.session_state.api_keys.get('datalab', ''),
-                type="password",
-                key="dl_key_input",
-                label_visibility="collapsed"
-            )
-        with dl_key_col2:
-            if st.button("Test", key="test_dl", use_container_width=True):
-                if dl_api_key:
-                    with st.spinner("Testing..."):
-                        success, message = test_datalab_api_key(dl_api_key)
-                        st.session_state.api_key_tests['datalab'] = (success, message)
-                        if success:
-                            st.session_state.api_keys['datalab'] = dl_api_key
+                    st.error(msg)
+            
+            # Datalab API Key
+            st.markdown("#### Datalab API Key")
+            dl_key_col1, dl_key_col2 = st.columns([3, 1])
+            with dl_key_col1:
+                dl_api_key = st.text_input(
+                    "Datalab API Key",
+                    value=dl_api_key,
+                    type="password",
+                    key="dl_key_input",
+                    label_visibility="collapsed"
+                )
+            with dl_key_col2:
+                if st.button("Test", key="test_dl", use_container_width=True):
+                    if dl_api_key:
+                        with st.spinner("Testing..."):
+                            success, message = test_datalab_api_key(dl_api_key)
+                            st.session_state.api_key_tests['datalab'] = (success, message)
+                            if success:
+                                st.session_state.api_keys['datalab'] = dl_api_key
+                    else:
+                        st.session_state.api_key_tests['datalab'] = (False, "Please enter an API key")
+            
+            if 'datalab' in st.session_state.api_key_tests:
+                success, msg = st.session_state.api_key_tests['datalab']
+                if success:
+                    st.success(msg)
                 else:
-                    st.session_state.api_key_tests['datalab'] = (False, "Please enter an API key")
-        
-        if 'datalab' in st.session_state.api_key_tests:
-            success, msg = st.session_state.api_key_tests['datalab']
-            if success:
-                st.success(msg)
-            else:
-                st.error(msg)
-        
-        # Gemini API Key
-        st.markdown("#### Gemini API Key")
-        gem_key_col1, gem_key_col2 = st.columns([3, 1])
-        with gem_key_col1:
-            gem_api_key = st.text_input(
-                "Gemini API Key",
-                value=st.session_state.api_keys.get('gemini', ''),
-                type="password",
-                key="gem_key_input",
-                label_visibility="collapsed"
-            )
-        with gem_key_col2:
-            if st.button("Test", key="test_gem", use_container_width=True):
-                if gem_api_key:
-                    with st.spinner("Testing..."):
-                        success, message = test_gemini_api_key(gem_api_key)
-                        st.session_state.api_key_tests['gemini'] = (success, message)
-                        if success:
-                            st.session_state.api_keys['gemini'] = gem_api_key
+                    st.error(msg)
+            
+            # Gemini API Key
+            st.markdown("#### Gemini API Key")
+            gem_key_col1, gem_key_col2 = st.columns([3, 1])
+            with gem_key_col1:
+                gem_api_key = st.text_input(
+                    "Gemini API Key",
+                    value=gem_api_key,
+                    type="password",
+                    key="gem_key_input",
+                    label_visibility="collapsed"
+                )
+            with gem_key_col2:
+                if st.button("Test", key="test_gem", use_container_width=True):
+                    if gem_api_key:
+                        with st.spinner("Testing..."):
+                            success, message = test_gemini_api_key(gem_api_key)
+                            st.session_state.api_key_tests['gemini'] = (success, message)
+                            if success:
+                                st.session_state.api_keys['gemini'] = gem_api_key
+                    else:
+                        st.session_state.api_key_tests['gemini'] = (False, "Please enter an API key")
+            
+            if 'gemini' in st.session_state.api_key_tests:
+                success, msg = st.session_state.api_key_tests['gemini']
+                if success:
+                    st.success(msg)
                 else:
-                    st.session_state.api_key_tests['gemini'] = (False, "Please enter an API key")
-        
-        if 'gemini' in st.session_state.api_key_tests:
-            success, msg = st.session_state.api_key_tests['gemini']
-            if success:
-                st.success(msg)
-            else:
-                st.error(msg)
-        
-        # Deepseek API Key
-        st.markdown("#### Deepseek API Key")
-        ds_key_col1, ds_key_col2 = st.columns([3, 1])
-        with ds_key_col1:
-            ds_api_key = st.text_input(
-                "Deepseek API Key",
-                value=st.session_state.api_keys.get('deepseek', ''),
-                type="password",
-                key="ds_key_input",
-                label_visibility="collapsed"
-            )
-        with ds_key_col2:
-            if st.button("Test", key="test_ds", use_container_width=True):
-                if ds_api_key:
-                    with st.spinner("Testing..."):
-                        success, message = test_deepseek_api_key(ds_api_key)
-                        st.session_state.api_key_tests['deepseek'] = (success, message)
-                        if success:
-                            st.session_state.api_keys['deepseek'] = ds_api_key
+                    st.error(msg)
+            
+            # Deepseek API Key
+            st.markdown("#### Deepseek API Key")
+            ds_key_col1, ds_key_col2 = st.columns([3, 1])
+            with ds_key_col1:
+                ds_api_key = st.text_input(
+                    "Deepseek API Key",
+                    value=ds_api_key,
+                    type="password",
+                    key="ds_key_input",
+                    label_visibility="collapsed"
+                )
+            with ds_key_col2:
+                if st.button("Test", key="test_ds", use_container_width=True):
+                    if ds_api_key:
+                        with st.spinner("Testing..."):
+                            success, message = test_deepseek_api_key(ds_api_key)
+                            st.session_state.api_key_tests['deepseek'] = (success, message)
+                            if success:
+                                st.session_state.api_keys['deepseek'] = ds_api_key
+                    else:
+                        st.session_state.api_key_tests['deepseek'] = (False, "Please enter an API key")
+            
+            if 'deepseek' in st.session_state.api_key_tests:
+                success, msg = st.session_state.api_key_tests['deepseek']
+                if success:
+                    st.success(msg)
                 else:
-                    st.session_state.api_key_tests['deepseek'] = (False, "Please enter an API key")
-        
-        if 'deepseek' in st.session_state.api_key_tests:
-            success, msg = st.session_state.api_key_tests['deepseek']
-            if success:
-                st.success(msg)
-            else:
-                st.error(msg)
-        
-        # Save Keys Button
-        st.markdown("---")
-        if st.button("💾 Save All Keys Locally", use_container_width=True):
-            keys_to_save = {
-                'huggingface': hf_api_key or st.session_state.api_keys.get('huggingface', ''),
-                'datalab': dl_api_key or st.session_state.api_keys.get('datalab', ''),
-                'gemini': gem_api_key or st.session_state.api_keys.get('gemini', ''),
-                'deepseek': ds_api_key or st.session_state.api_keys.get('deepseek', '')
-            }
-            if save_all_api_keys(keys_to_save):
-                st.success("✅ All API keys saved to .env file!")
-                st.info("⚠️ Please make a backup copy of the .env file.")
-            else:
-                st.error("❌ Failed to save some API keys")
+                    st.error(msg)
+            
+            # Save Keys Button
+            st.markdown("---")
+            if st.button("💾 Save All Keys Locally", use_container_width=True):
+                keys_to_save = {
+                    'huggingface': hf_api_key or st.session_state.api_keys.get('huggingface', ''),
+                    'datalab': dl_api_key or st.session_state.api_keys.get('datalab', ''),
+                    'gemini': gem_api_key or st.session_state.api_keys.get('gemini', ''),
+                    'deepseek': ds_api_key or st.session_state.api_keys.get('deepseek', '')
+                }
+                if save_all_api_keys(keys_to_save):
+                    st.success("✅ All API keys saved to .env file!")
+                    st.info("⚠️ Please make a backup copy of the .env file.")
+                else:
+                    st.error("❌ Failed to save some API keys")
         
         # Field Selection
         st.markdown("---")
