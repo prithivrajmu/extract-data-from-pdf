@@ -8,6 +8,7 @@ import streamlit as st
 import pandas as pd
 import os
 import tempfile
+import time
 from typing import Dict, List, Set
 from pathlib import Path
 
@@ -129,8 +130,8 @@ def main():
     load_saved_api_keys()
     
     # Header
-    st.markdown('<div class="main-header">📄 EC Data Extraction</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-header">Extract structured data from Encumbrance Certificate PDFs using multiple OCR methods</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header">📄 PDF Data Extraction</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Extract structured data from PDF documents using multiple OCR and AI methods</div>', unsafe_allow_html=True)
     
     # Sidebar
     with st.sidebar:
@@ -368,12 +369,16 @@ def main():
         # Output Format Selection
         st.markdown("---")
         st.subheader("💾 Output Format")
-        output_format = st.selectbox(
-            "Select output format",
+        st.info("⚠️ **Required:** Select at least one output format before processing")
+        output_formats = st.multiselect(
+            "Select output format(s)",
             options=["CSV", "Excel (XLSX)", "JSON", "Markdown (MD)"],
-            index=0,
-            help="Choose the format for downloading results"
+            default=["CSV"],
+            help="You can select multiple formats. At least one format must be selected to proceed."
         )
+        
+        if not output_formats:
+            st.warning("⚠️ Please select at least one output format")
     
     # Main Content Area
     st.markdown("---")
@@ -424,6 +429,8 @@ def main():
     if process_button:
         if not uploaded_files:
             st.error("⚠️ Please upload at least one PDF file")
+        elif not output_formats:
+            st.error("⚠️ Please select at least one output format in the sidebar before processing")
         else:
             # Prepare API keys
             api_keys_dict = {
@@ -456,9 +463,16 @@ def main():
                 # Process files
                 st.markdown("### ⏳ Processing")
                 
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                
+                # Create progress containers
+                progress_container = st.container()
+                with progress_container:
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    details_text = st.empty()
+                    
+                    # Create metrics row for real-time stats
+                    metrics_col1, metrics_col2, metrics_col3 = st.columns(3)
+                    
                 all_results = []
                 temp_files = []
                 
@@ -466,13 +480,31 @@ def main():
                     # Create temp directory
                     temp_dir = tempfile.mkdtemp()
                     
+                    total_files = len(uploaded_files)
+                    processed_files = 0
+                    total_rows = 0
+                    
                     for i, uploaded_file in enumerate(uploaded_files):
                         filename = uploaded_file.name
-                        status_text.text(f"Processing {filename} ({i+1}/{len(uploaded_files)})...")
-                        progress_bar.progress((i + 0.5) / len(uploaded_files))
+                        file_num = i + 1
+                        
+                        # Update progress
+                        progress_percent = (file_num - 0.5) / total_files
+                        progress_bar.progress(progress_percent)
+                        status_text.markdown(f"**📄 Processing File {file_num}/{total_files}:** `{filename}`")
+                        details_text.markdown(f"⏳ Extracting data using {ocr_method}...")
+                        
+                        # Update metrics
+                        with metrics_col1:
+                            st.metric("Files Processed", f"{processed_files}/{total_files}")
+                        with metrics_col2:
+                            st.metric("Rows Extracted", total_rows)
+                        with metrics_col3:
+                            st.metric("Current Status", "Processing...")
                         
                         try:
                             # Save uploaded file temporarily
+                            details_text.markdown(f"💾 Saving file temporarily...")
                             temp_file_path = save_uploaded_file(uploaded_file, temp_dir)
                             temp_files.append(temp_file_path)
                             
@@ -485,6 +517,7 @@ def main():
                                 extraction_fields = list(st.session_state.selected_fields)
                             
                             # Extract data
+                            details_text.markdown(f"🔍 Extracting data from PDF (this may take 30-60 seconds)...")
                             rows = extract_data(
                                 temp_file_path,
                                 selected_method,
@@ -494,23 +527,65 @@ def main():
                             )
                             
                             all_results.extend(rows)
+                            processed_files += 1
+                            total_rows += len(rows)
+                            
+                            details_text.markdown(f"✅ Extracted {len(rows)} row(s) from `{filename}`")
+                            
+                            # Update progress
+                            progress_percent = file_num / total_files
+                            progress_bar.progress(progress_percent)
+                            
+                            # Update metrics
+                            with metrics_col1:
+                                st.metric("Files Processed", f"{processed_files}/{total_files}")
+                            with metrics_col2:
+                                st.metric("Rows Extracted", total_rows)
+                            with metrics_col3:
+                                st.metric("Current Status", "✅ Success")
+                            
+                            # Small delay for UI update
+                            time.sleep(0.1)
                             
                         except Exception as e:
-                            st.error(f"❌ Error processing {filename}: {str(e)}")
+                            processed_files += 1
+                            error_msg = str(e)
+                            st.error(f"❌ Error processing `{filename}`: {error_msg}")
+                            details_text.markdown(f"❌ Failed to process `{filename}`")
+                            
+                            # Update metrics
+                            with metrics_col1:
+                                st.metric("Files Processed", f"{processed_files}/{total_files}")
+                            with metrics_col2:
+                                st.metric("Rows Extracted", total_rows)
+                            with metrics_col3:
+                                st.metric("Current Status", "❌ Error")
                     
                     # Clean up temp files
+                    details_text.markdown("🧹 Cleaning up temporary files...")
                     for temp_file in temp_files:
                         try:
                             os.remove(temp_file)
                         except:
                             pass
                     
+                    # Final progress update
                     progress_bar.progress(1.0)
-                    status_text.text("✅ Processing complete!")
+                    status_text.markdown("**✅ Processing Complete!**")
+                    details_text.markdown(f"📊 Successfully processed {processed_files} file(s) with {total_rows} total row(s) extracted")
                     
-                    # Store results
+                    # Final metrics
+                    with metrics_col1:
+                        st.metric("Files Processed", f"{processed_files}/{total_files}", delta=f"{processed_files} file(s)")
+                    with metrics_col2:
+                        st.metric("Rows Extracted", total_rows, delta=f"{total_rows} row(s)")
+                    with metrics_col3:
+                        st.metric("Success Rate", f"{100*processed_files/total_files:.0f}%")
+                    
+                    # Store results and selected formats
                     if all_results:
                         st.session_state.extraction_results = all_results
+                        st.session_state.selected_output_formats = output_formats
                     
                 except Exception as e:
                     st.error(f"❌ Processing error: {str(e)}")
@@ -555,7 +630,7 @@ def main():
             # Display dataframe
             st.dataframe(df, use_container_width=True, height=400)
             
-            # Download buttons based on selected format
+            # Download buttons for all selected formats
             st.markdown("### 💾 Download Results")
             
             format_map = {
@@ -565,35 +640,58 @@ def main():
                 "Markdown (MD)": ("md", "text/markdown", "extracted_data.md")
             }
             
-            file_format, mime_type, default_filename = format_map.get(output_format, format_map["CSV"])
+            # Get selected formats from session state (stored during processing)
+            selected_formats = st.session_state.get('selected_output_formats', ["CSV"])
             
-            # Prepare download data
-            import io
-            download_data = None
-            
-            if file_format == "csv":
-                download_data = df.to_csv(index=False, encoding='utf-8-sig')
-            elif file_format == "xlsx":
-                excel_buffer = io.BytesIO()
-                df.to_excel(excel_buffer, index=False, engine='openpyxl')
-                excel_buffer.seek(0)
-                download_data = excel_buffer
-            elif file_format == "json":
-                from utils import dataframe_to_json_string
-                download_data = dataframe_to_json_string(df)
-            elif file_format == "md":
-                from utils import dataframe_to_markdown_string
-                download_data = dataframe_to_markdown_string(df)
-            
-            # Download button
-            if download_data:
-                st.download_button(
-                    label=f"📥 Download {output_format}",
-                    data=download_data,
-                    file_name=default_filename,
-                    mime=mime_type,
-                    use_container_width=True
-                )
+            # Create download buttons for each selected format
+            if not selected_formats:
+                st.warning("⚠️ No output formats selected. Please select at least one format in the sidebar.")
+            else:
+                import io
+                
+                # Arrange download buttons in columns (2 per row)
+                num_formats = len(output_formats)
+                cols_per_row = 2
+                num_rows = (num_formats + cols_per_row - 1) // cols_per_row
+                
+                download_buttons = []
+                
+                for format_name in selected_formats:
+                    file_format, mime_type, default_filename = format_map.get(format_name)
+                    
+                    # Prepare download data
+                    download_data = None
+                    
+                    if file_format == "csv":
+                        download_data = df.to_csv(index=False, encoding='utf-8-sig')
+                    elif file_format == "xlsx":
+                        excel_buffer = io.BytesIO()
+                        df.to_excel(excel_buffer, index=False, engine='openpyxl')
+                        excel_buffer.seek(0)
+                        download_data = excel_buffer
+                    elif file_format == "json":
+                        from utils import dataframe_to_json_string
+                        download_data = dataframe_to_json_string(df)
+                    elif file_format == "md":
+                        from utils import dataframe_to_markdown_string
+                        download_data = dataframe_to_markdown_string(df)
+                    
+                    if download_data:
+                        download_buttons.append((format_name, download_data, default_filename, mime_type))
+                
+                # Display download buttons in a grid
+                for i in range(0, len(download_buttons), cols_per_row):
+                    cols = st.columns(cols_per_row)
+                    for j, (format_name, data, filename, mime) in enumerate(download_buttons[i:i+cols_per_row]):
+                        with cols[j]:
+                            st.download_button(
+                                label=f"📥 Download {format_name}",
+                                data=data,
+                                file_name=filename,
+                                mime=mime,
+                                use_container_width=True,
+                                key=f"download_{format_name}_{i}_{j}"
+                            )
         else:
             st.warning("⚠️ No data extracted. Please check your PDF files and extraction method.")
 
