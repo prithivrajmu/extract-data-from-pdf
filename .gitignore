@@ -82,4 +82,6 @@ dmypy.json
 .env
 .env.local
 .env.*.local
+# But keep .env.example
+!.env.example
 

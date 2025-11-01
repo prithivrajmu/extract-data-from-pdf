@@ -249,6 +249,12 @@ The following fields are extracted by default:
 
 ---
 
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
+
+---
+
 ## 🔧 Requirements
 
 See `requirements.txt` for complete dependency list. Key dependencies:
@@ -302,7 +308,7 @@ See `LICENSE` file for details.
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit issues or pull requests.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on how to contribute to this project.
 
 ---
 
