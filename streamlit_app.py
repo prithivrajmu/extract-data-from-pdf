@@ -30,6 +30,12 @@ from utils import (
     format_file_size,
     get_file_size_mb
 )
+from gpu_check_utils import check_gpu_comprehensive
+from gemini_test_modules import (
+    test_gemini_basic,
+    test_gemini_file_upload,
+    test_gemini_json_upload
+)
 
 # Page configuration
 st.set_page_config(
@@ -379,6 +385,228 @@ def main():
         
         if not output_formats:
             st.warning("⚠️ Please select at least one output format")
+        
+        # GPU Check Section
+        st.markdown("---")
+        st.subheader("🖥️ GPU Status")
+        
+        with st.expander("Check GPU Availability", expanded=False):
+            if st.button("🔍 Check GPU", use_container_width=True):
+                with st.spinner("Checking GPU status..."):
+                    gpu_info = check_gpu_comprehensive()
+                    
+                    # Overall Status
+                    status_emoji = {
+                        'ready': '✅',
+                        'driver_only': '⚠️',
+                        'not_available': '❌',
+                        'unknown': '❓'
+                    }
+                    status_text = {
+                        'ready': 'GPU Ready',
+                        'driver_only': 'Driver Only',
+                        'not_available': 'Not Available',
+                        'unknown': 'Unknown'
+                    }
+                    
+                    status = gpu_info['overall_status']
+                    st.markdown(f"### {status_emoji.get(status, '❓')} Status: {status_text.get(status, 'Unknown')}")
+                    
+                    # NVIDIA Driver Check
+                    st.markdown("#### 📦 NVIDIA Driver")
+                    nvidia = gpu_info['nvidia_driver']
+                    if nvidia['available']:
+                        st.success("✅ NVIDIA driver detected")
+                        if nvidia['driver_version']:
+                            st.text(f"Version: {nvidia['driver_version']}")
+                        if nvidia['cuda_version']:
+                            st.text(f"CUDA: {nvidia['cuda_version']}")
+                        if nvidia['gpu_name']:
+                            st.text(f"GPU: {nvidia['gpu_name']}")
+                        if nvidia['gpu_memory']:
+                            st.text(f"Memory: {nvidia['gpu_memory']}")
+                    else:
+                        st.error(f"❌ NVIDIA driver not available")
+                        if nvidia['error']:
+                            st.text(f"Error: {nvidia['error']}")
+                    
+                    # PyTorch CUDA Check
+                    st.markdown("#### 🔥 PyTorch CUDA Support")
+                    pytorch = gpu_info['pytorch_cuda']
+                    if pytorch['available']:
+                        st.success("✅ PyTorch CUDA support available")
+                        if pytorch['pytorch_version']:
+                            st.text(f"PyTorch: {pytorch['pytorch_version']}")
+                        if pytorch['cuda_version']:
+                            st.text(f"CUDA: {pytorch['cuda_version']}")
+                        if pytorch['cudnn_version']:
+                            st.text(f"cuDNN: {pytorch['cudnn_version']}")
+                        
+                        if pytorch['gpu_count'] > 0:
+                            st.text(f"GPUs Detected: {pytorch['gpu_count']}")
+                            for gpu in pytorch['gpus']:
+                                st.text(f"  • GPU {gpu['index']}: {gpu['name']} ({gpu['memory_gb']} GB)")
+                    else:
+                        st.warning("⚠️ PyTorch CUDA support not available")
+                        if pytorch['error']:
+                            st.text(f"Error: {pytorch['error']}")
+                        elif pytorch['pytorch_version']:
+                            st.text(f"PyTorch {pytorch['pytorch_version']} installed, but CUDA not available")
+                            st.info("💡 Tip: Reinstall PyTorch with CUDA support for GPU acceleration")
+                    
+                    # Recommendations
+                    if gpu_info['recommendations']:
+                        st.markdown("#### 💡 Recommendations")
+                        for rec in gpu_info['recommendations']:
+                            st.info(rec)
+                    
+                    # Summary
+                    if gpu_info['gpu_ready']:
+                        st.success("🎉 GPU is ready for acceleration! Some extraction methods (like EasyOCR) can use GPU for faster processing.")
+                    else:
+                        st.info("ℹ️ GPU acceleration not available. Extraction will use CPU, which may be slower but still functional.")
+                    
+                    # Store in session state
+                    st.session_state.gpu_info = gpu_info
+            
+            # Show cached GPU info if available
+            if 'gpu_info' in st.session_state:
+                gpu_info = st.session_state.gpu_info
+                status = gpu_info['overall_status']
+                status_emoji = {'ready': '✅', 'driver_only': '⚠️', 'not_available': '❌', 'unknown': '❓'}
+                
+                if status == 'ready':
+                    st.success(f"{status_emoji.get(status)} GPU Ready")
+                elif status == 'driver_only':
+                    st.warning(f"{status_emoji.get(status)} GPU Driver Only")
+                else:
+                    st.info(f"{status_emoji.get(status)} GPU Not Available")
+        
+        # Advanced Testing Section
+        st.markdown("---")
+        st.subheader("🧪 Advanced Testing")
+        
+        with st.expander("Gemini API Tests", expanded=False):
+            st.info("Run advanced tests to verify your Gemini API setup")
+            
+            # Check if Gemini API key is available
+            gemini_key = gem_api_key or st.session_state.api_keys.get('gemini', '')
+            
+            if not gemini_key:
+                st.warning("⚠️ Gemini API key required for testing")
+            else:
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    if st.button("Test 1: Basic", use_container_width=True, help="Test model creation, text generation, and JSON output"):
+                        with st.spinner("Running basic tests..."):
+                            success, results = test_gemini_basic(gemini_key)
+                            
+                            if success:
+                                st.success("✅ Basic Tests Passed")
+                            else:
+                                st.error("❌ Basic Tests Failed")
+                            
+                            # Show test details
+                            for test in results.get('tests', []):
+                                if test['status'] == 'success':
+                                    st.success(f"✓ {test['name']}: {test['message']}")
+                                elif test['status'] == 'error':
+                                    st.error(f"✗ {test['name']}: {test['message']}")
+                                else:
+                                    st.warning(f"⚠ {test['name']}: {test['message']}")
+                            
+                            if results.get('errors'):
+                                for error in results['errors']:
+                                    st.error(f"Error: {error}")
+                            
+                            st.session_state.gemini_test_basic = results
+                
+                with col2:
+                    if st.button("Test 2: File Upload", use_container_width=True, help="Test PDF file upload and processing"):
+                        with st.spinner("Testing file upload (this may take 30-60 seconds)..."):
+                            success, results = test_gemini_file_upload(gemini_key)
+                            
+                            if success:
+                                st.success("✅ File Upload Test Passed")
+                                if results.get('model_used'):
+                                    st.info(f"Model used: {results['model_used']}")
+                            else:
+                                st.error("❌ File Upload Test Failed")
+                            
+                            # Show test details
+                            for test in results.get('tests', []):
+                                if test['status'] == 'success':
+                                    st.success(f"✓ {test['name']}: {test['message']}")
+                                elif test['status'] == 'error':
+                                    st.error(f"✗ {test['name']}: {test['message']}")
+                                else:
+                                    st.warning(f"⚠ {test['name']}: {test['message']}")
+                            
+                            if results.get('errors'):
+                                for error in results['errors']:
+                                    st.error(f"Error: {error}")
+                            
+                            st.session_state.gemini_test_file_upload = results
+                
+                with col3:
+                    if st.button("Test 3: JSON Upload", use_container_width=True, help="Test PDF upload with JSON output format"):
+                        with st.spinner("Testing JSON output with file upload (this may take 30-60 seconds)..."):
+                            success, results = test_gemini_json_upload(gemini_key)
+                            
+                            if success:
+                                st.success("✅ JSON Upload Test Passed")
+                                if results.get('model_used'):
+                                    st.info(f"Model used: {results['model_used']}")
+                            else:
+                                st.error("❌ JSON Upload Test Failed")
+                            
+                            # Show test details
+                            for test in results.get('tests', []):
+                                if test['status'] == 'success':
+                                    st.success(f"✓ {test['name']}: {test['message']}")
+                                elif test['status'] == 'error':
+                                    st.error(f"✗ {test['name']}: {test['message']}")
+                                else:
+                                    st.warning(f"⚠ {test['name']}: {test['message']}")
+                            
+                            if results.get('errors'):
+                                for error in results['errors']:
+                                    st.error(f"Error: {error}")
+                            
+                            st.session_state.gemini_test_json_upload = results
+                
+                # Run All Tests Button
+                if st.button("🚀 Run All Tests", use_container_width=True, type="primary"):
+                    with st.spinner("Running all Gemini API tests (this may take 2-3 minutes)..."):
+                        test_results = {}
+                        
+                        # Test 1: Basic
+                        st.markdown("#### Test 1: Basic Functionality")
+                        success1, results1 = test_gemini_basic(gemini_key)
+                        test_results['basic'] = (success1, results1)
+                        
+                        # Test 2: File Upload
+                        st.markdown("#### Test 2: File Upload")
+                        success2, results2 = test_gemini_file_upload(gemini_key)
+                        test_results['file_upload'] = (success2, results2)
+                        
+                        # Test 3: JSON Upload
+                        st.markdown("#### Test 3: JSON Output with File Upload")
+                        success3, results3 = test_gemini_json_upload(gemini_key)
+                        test_results['json_upload'] = (success3, results3)
+                        
+                        # Summary
+                        st.markdown("### 📊 Test Summary")
+                        all_passed = success1 and success2 and success3
+                        
+                        if all_passed:
+                            st.success("🎉 All tests passed! Your Gemini API setup is working correctly.")
+                        else:
+                            st.warning("⚠️ Some tests failed. Check the details above.")
+                        
+                        # Store all results
+                        st.session_state.gemini_all_tests = test_results
     
     # Main Content Area
     st.markdown("---")
