@@ -11,36 +11,60 @@ from pathlib import Path
 
 def extract_with_local_model(pdf_path: str, model_name: str = 'datalab-to/chandra', use_cpu: bool = False, use_pretty: bool = False) -> List[Dict[str, str]]:
     """
-    Extract data using local OCR model (Chandra or CPU variant).
+    Extract data using local OCR model.
+    
+    Supports:
+    - Chandra (datalab-to/chandra) - via Chandra CLI (fully supported)
+    - TrOCR models - via transformers library (experimental)
+    - Other models - attempted via transformers (may need custom implementation)
     
     Args:
         pdf_path: Path to PDF file
-        model_name: Model name/identifier (currently only 'datalab-to/chandra' fully supported via Chandra CLI)
+        model_name: Model name/identifier
         use_cpu: If True, force CPU mode
-        use_pretty: If True, use pretty output formatter
+        use_pretty: If True, use pretty output formatter (only for Chandra)
         
     Returns:
         List of extracted row dictionaries
     """
-    # Currently only Chandra is fully supported via our extraction scripts
-    # Other models would need custom integration
-    if model_name != 'datalab-to/chandra' and not model_name.startswith('datalab-to/chandra'):
-        # For now, fall back to Chandra or raise error
-        # In future, we can add support for other models
+    from model_loaders import get_model_loader, is_model_supported
+    
+    # Check if model is supported
+    is_supported, reason = is_model_supported(model_name)
+    
+    if not is_supported:
         raise ValueError(
-            f"Model '{model_name}' is not yet fully supported for local extraction. "
-            f"Currently only 'datalab-to/chandra' is supported. "
-            f"Please use Chandra or another extraction method (API-based) for other models."
+            f"Model '{model_name}' is not supported: {reason}\n"
+            f"Please install required dependencies or use a supported model."
         )
     
-    if use_cpu:
-        from extract_ec_data_cpu import extract_data_from_pdf
-    elif use_pretty:
-        from extract_ec_data_pretty import extract_data_from_pdf
-    else:
-        from extract_ec_data import extract_data_from_pdf
+    # Get the appropriate loader
+    loader_func, loader_type = get_model_loader(model_name)
     
-    rows = extract_data_from_pdf(pdf_path)
+    # For Chandra models, use existing extraction scripts (they handle parsing)
+    if loader_type == 'chandra_cli':
+        if use_cpu:
+            from extract_ec_data_cpu import extract_data_from_pdf
+        elif use_pretty:
+            from extract_ec_data_pretty import extract_data_from_pdf
+        else:
+            from extract_ec_data import extract_data_from_pdf
+        
+        rows = extract_data_from_pdf(pdf_path)
+    
+    # For other models, use generic extraction
+    else:
+        # Extract text using the model
+        text, structured_data = loader_func(model_name, pdf_path, use_cpu)
+        
+        # Parse the extracted text (reuse parsing logic from EasyOCR)
+        from extract_ec_data_easyocr import parse_table_rows
+        rows = parse_table_rows(text)
+        
+        # Add filename
+        filename = os.path.basename(pdf_path)
+        for row in rows:
+            row['filename'] = filename
     
     # Normalize field names
     normalized_rows = []

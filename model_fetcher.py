@@ -54,7 +54,8 @@ def save_cache(models: List[Dict]):
 def fetch_ocr_models_from_huggingface(
     api_key: Optional[str] = None,
     limit: int = 50,
-    task: str = "document-question-answering"
+    task: str = "document-question-answering",
+    for_api_use: bool = False
 ) -> List[Dict[str, str]]:
     """
     Fetch OCR models from HuggingFace Hub API.
@@ -146,9 +147,16 @@ def fetch_ocr_models_from_huggingface(
             else:
                 model_info['size'] = '~1-2GB'
             
-            model_info['download_time'] = '5-15 minutes (first time)'
+            model_info['download_time'] = '5-15 minutes (first time)' if not for_api_use else 'N/A (API-based)'
             model_info['supports_gpu'] = True
             model_info['supports_cpu'] = True
+            
+            # For API use, check if model is API-compatible
+            if for_api_use:
+                model_info['api_compatible'] = True  # Most models on HF can be used via API
+                # Known compatible models
+                known_api_models = ['datalab-to/chandra', 'microsoft/trocr', 'microsoft/table-transformer']
+                model_info['api_compatible'] = any(known in model_id.lower() for known in known_api_models)
             
             models.append(model_info)
         

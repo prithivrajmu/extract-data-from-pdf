@@ -229,7 +229,13 @@ def main():
             selected_model_info = local_models[selected_model_idx]
             
             # Check if model is supported
-            is_supported = local_model == 'datalab-to/chandra' or local_model.startswith('datalab-to/chandra')
+            try:
+                from model_loaders import is_model_supported
+                is_supported, support_reason = is_model_supported(local_model)
+            except Exception:
+                # Fallback check
+                is_supported = local_model == 'datalab-to/chandra' or local_model.startswith('datalab-to/chandra')
+                support_reason = "Chandra CLI model" if is_supported else "Needs custom implementation"
             
             with st.expander(f"ℹ️ About {selected_model_info['name']}"):
                 st.write(f"**Description:** {selected_model_info['description']}")
@@ -242,11 +248,12 @@ def main():
                 if selected_model_info.get('verified'):
                     st.write("**Status:** ✅ Verified")
                 
-                # Show support status
+                # Show support status with detailed reason
                 if is_supported:
-                    st.success("✅ **Fully Supported** - Ready to use with this extraction method")
+                    st.success(f"✅ **Supported** - {support_reason}")
                 else:
-                    st.warning("⚠️ **Limited Support** - Currently only Chandra (datalab-to/chandra) is fully supported for local extraction. This model may be available via API methods.")
+                    st.warning(f"⚠️ **Limited Support** - {support_reason}")
+                    st.info("💡 You can still try this model - it will attempt to load via transformers library. Some models may need additional dependencies.")
                 
                 st.markdown(f"**Model Page:** [{selected_model_info['name']}]({selected_model_info['url']})")
             
@@ -274,9 +281,39 @@ def main():
         if ocr_method == "HuggingFace":
             st.markdown("---")
             st.subheader("🤗 Model Selection")
+            st.info("📡 Models are fetched from HuggingFace Hub. Requires HuggingFace API key for best results.")
             
-            # Show available models
-            hf_models = get_huggingface_ocr_models()
+            # Get HuggingFace API key if available (from session state, will be updated when user enters it)
+            hf_api_key_for_models = st.session_state.api_keys.get('huggingface', '')
+            
+            # Model fetching options
+            col_refresh_hf, col_info_hf = st.columns([1, 2])
+            with col_refresh_hf:
+                refresh_hf_models = st.button("🔄 Refresh Model List", key="refresh_hf", help="Fetch latest models from HuggingFace Hub")
+            
+            if refresh_hf_models:
+                from model_fetcher import clear_cache
+                clear_cache()
+                st.success("✅ Cache cleared! Model list will refresh.")
+            
+            # Determine if we should use dynamic fetching
+            use_dynamic_hf = bool(hf_api_key_for_models) or refresh_hf_models
+            
+            # Fetch available models
+            try:
+                with st.spinner("Loading available HuggingFace models..." if use_dynamic_hf else ""):
+                    hf_models = get_huggingface_ocr_models(
+                        api_key=hf_api_key_for_models if hf_api_key_for_models else None,
+                        use_dynamic=use_dynamic_hf
+                    )
+            except Exception as e:
+                st.warning(f"⚠️ Could not fetch models dynamically: {e}. Using default models.")
+                hf_models = get_huggingface_ocr_models(use_dynamic=False)
+            
+            if not hf_models:
+                st.error("No models available. Please check your HuggingFace API key or internet connection.")
+                hf_models = get_huggingface_ocr_models(use_dynamic=False)
+            
             hf_model_options = [f"{m['name']} ({m['id']})" for m in hf_models]
             hf_model_ids = [m['id'] for m in hf_models]
             
@@ -284,7 +321,7 @@ def main():
                 "Select HuggingFace Model",
                 range(len(hf_model_options)),
                 format_func=lambda x: hf_model_options[x],
-                index=0,  # Default to Chandra
+                index=0,  # Default to first model
                 help="Choose which HuggingFace model to use via API"
             )
             hf_model = hf_model_ids[selected_hf_idx]
@@ -293,10 +330,23 @@ def main():
             selected_hf_info = hf_models[selected_hf_idx]
             with st.expander(f"ℹ️ About {selected_hf_info['name']}"):
                 st.write(f"**Description:** {selected_hf_info['description']}")
-                st.write(f"**API Compatible:** {'Yes' if selected_hf_info.get('api_compatible') else 'No'}")
+                st.write(f"**Model ID:** `{selected_hf_info['id']}`")
+                st.write(f"**API Compatible:** {'✅ Yes' if selected_hf_info.get('api_compatible', True) else '⚠️ Limited'}")
+                if selected_hf_info.get('downloads'):
+                    st.write(f"**Downloads:** {selected_hf_info['downloads']:,}")
+                if selected_hf_info.get('verified'):
+                    st.write("**Status:** ✅ Verified")
+                if selected_hf_info.get('size'):
+                    st.write(f"**Model Size:** {selected_hf_info['size']}")
                 if selected_hf_info.get('note'):
                     st.info(f"**Note:** {selected_hf_info['note']}")
                 st.markdown(f"**Model Page:** [{selected_hf_info['name']}]({selected_hf_info['url']})")
+            
+            # Info about dynamic fetching
+            if not hf_api_key_for_models:
+                st.caption("💡 **Tip:** Add your HuggingFace API key below to fetch the latest models automatically")
+            else:
+                st.caption("✅ Using HuggingFace API key - models are fetched automatically")
             
             # Link to browse more models
             st.markdown(f"[🔍 Browse more OCR models on HuggingFace]({get_model_search_url()})")
@@ -307,10 +357,11 @@ def main():
                 "Custom Model Name",
                 value="",
                 placeholder="username/model-name",
-                help="Enter a custom HuggingFace model name"
+                help="Enter a custom HuggingFace model name (e.g., datalab-to/chandra)"
             )
             if custom_model:
                 hf_model = custom_model
+                st.info(f"Using custom model: `{hf_model}`")
         
         # API Key Management Section
         st.markdown("---")
