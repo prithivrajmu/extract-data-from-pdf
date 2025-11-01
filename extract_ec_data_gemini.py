@@ -261,6 +261,23 @@ Return ONLY the JSON array, nothing else."""
     return prompt
 
 
+def should_skip_pdf(pdf_path: str) -> bool:
+    """
+    Check if PDF already has output files and should be skipped.
+    
+    Args:
+        pdf_path: Path to PDF file
+        
+    Returns:
+        True if output files exist (should skip), False otherwise
+    """
+    csv_output = pdf_path.replace('.pdf', '_extracted_gemini.csv')
+    excel_output = pdf_path.replace('.pdf', '_extracted_gemini.xlsx')
+    
+    # Skip if either CSV or Excel output exists
+    return os.path.exists(csv_output) or os.path.exists(excel_output)
+
+
 def extract_data_from_pdf_gemini(pdf_path: str, model: genai.GenerativeModel, max_retries: int = 3, model_name: str = None) -> List[Dict[str, str]]:
     """
     Extract data from PDF using Google Gemini AI with retry logic.
@@ -600,6 +617,33 @@ def process_batch(pdf_files: List[str], model: genai.GenerativeModel, delay_betw
             all_results[filename] = []
             continue
         
+        # Check if output files already exist
+        if should_skip_pdf(pdf_file):
+            csv_file = pdf_file.replace('.pdf', '_extracted_gemini.csv')
+            excel_file = pdf_file.replace('.pdf', '_extracted_gemini.xlsx')
+            existing_files = []
+            if os.path.exists(csv_file):
+                existing_files.append(os.path.basename(csv_file))
+            if os.path.exists(excel_file):
+                existing_files.append(os.path.basename(excel_file))
+            print(f"⏭️  Skipping {filename} - output files already exist: {', '.join(existing_files)}")
+            print()
+            # Load existing data instead of processing
+            try:
+                if os.path.exists(csv_file):
+                    df_existing = pd.read_csv(csv_file)
+                    existing_rows = df_existing.to_dict('records')
+                    all_results[filename] = existing_rows
+                    successful += 1
+                    print(f"   📂 Loaded {len(existing_rows)} rows from existing output")
+                    print()
+                else:
+                    all_results[filename] = []
+            except Exception as e:
+                print(f"   ⚠️  Could not load existing output: {e}")
+                all_results[filename] = []
+            continue
+        
         try:
             rows = extract_data_from_pdf_gemini(pdf_file, model, model_name=model_name)
             
@@ -655,132 +699,164 @@ def process_batch(pdf_files: List[str], model: genai.GenerativeModel, delay_betw
     return all_results
 
 
-def main():
-    """Main function to run the extraction script with batch processing."""
-    # List of PDF files to process from ec2 directory
-    ec2_dir = Path("ec2")
+def process_directory(directory: str, model: genai.GenerativeModel, model_name: str, delay_between_files: int) -> Dict[str, List[Dict[str, str]]]:
+    """
+    Process all PDFs in a directory.
     
-    pdf_files = []
-    if ec2_dir.exists():
-        pdf_files = sorted([str(f) for f in ec2_dir.glob("*.pdf")])
-    else:
-        print("⚠️  Warning: ec2 directory not found, checking ec directory...")
-        ec_dir = Path("ec")
-        if ec_dir.exists():
-            pdf_files = sorted([str(f) for f in ec_dir.glob("*.pdf")])
+    Args:
+        directory: Directory name (e.g., 'ec3', 'ec2', 'ec')
+        model: Configured Gemini model instance
+        model_name: Name of the model being used
+        delay_between_files: Delay between processing files
+        
+    Returns:
+        Dictionary mapping filename to list of extracted rows
+    """
+    dir_path = Path(directory)
+    
+    if not dir_path.exists():
+        print(f"⚠️  Directory {directory}/ not found, skipping...")
+        return {}
+    
+    # Get all PDF files in directory
+    pdf_files = sorted([str(f) for f in dir_path.glob("*.pdf")])
+    
+    if not pdf_files:
+        print(f"📁 No PDF files found in {directory}/ directory")
+        return {}
+    
+    print("=" * 70)
+    print(f"📁 Processing directory: {directory}/")
+    print("=" * 70)
+    print()
+    
+    # Filter out PDFs that already have outputs
+    pdfs_to_process = []
+    skipped_count = 0
+    
+    for pdf_file in pdf_files:
+        if should_skip_pdf(pdf_file):
+            skipped_count += 1
         else:
-            print("⚠️  Warning: No PDF files found in ec2/ or ec/ directories")
+            pdfs_to_process.append(pdf_file)
     
-    # Filter out files that don't exist
-    existing_files = [f for f in pdf_files if os.path.exists(f)]
-    missing_files = [f for f in pdf_files if not os.path.exists(f)]
-    
-    if missing_files:
-        print("⚠️  Warning: Some files were not found:")
-        for f in missing_files:
-            print(f"   - {f}")
+    if skipped_count > 0:
+        print(f"⏭️  Skipping {skipped_count} PDF(s) with existing outputs")
         print()
     
-    if not existing_files:
-        print("❌ Error: No PDF files found to process!")
-        print(f"   Current directory: {os.getcwd()}")
-        print(f"   Looking for files: {pdf_files}")
-        return
+    if not pdfs_to_process:
+        print(f"✅ All PDFs in {directory}/ already have output files")
+        print()
+        # Load existing outputs for combination
+        all_existing_rows = {}
+        for pdf_file in pdf_files:
+            csv_file = pdf_file.replace('.pdf', '_extracted_gemini.csv')
+            if os.path.exists(csv_file):
+                try:
+                    df_existing = pd.read_csv(csv_file)
+                    filename = os.path.basename(pdf_file)
+                    all_existing_rows[filename] = df_existing.to_dict('records')
+                except:
+                    pass
+        return all_existing_rows
+    
+    print(f"📋 Found {len(pdfs_to_process)} PDF(s) to process (skipped {skipped_count} with existing outputs)")
+    print()
+    
+    # Process PDFs
+    all_results = process_batch(pdfs_to_process, model, delay_between_files=delay_between_files, model_name=model_name)
+    
+    # Also load existing outputs for skipped files
+    for pdf_file in pdf_files:
+        if should_skip_pdf(pdf_file):
+            csv_file = pdf_file.replace('.pdf', '_extracted_gemini.csv')
+            filename = os.path.basename(pdf_file)
+            if filename not in all_results:
+                try:
+                    if os.path.exists(csv_file):
+                        df_existing = pd.read_csv(csv_file)
+                        all_results[filename] = df_existing.to_dict('records')
+                except:
+                    all_results[filename] = []
+    
+    return all_results
+
+
+def main():
+    """Main function to run the extraction script with batch processing."""
+    # Process directories in order: ec3, ec2, ec
+    directories = ["ec3", "ec2", "ec"]
     
     print("=" * 70)
     print(" " * 10 + "EC Data Extraction - Batch Processing (Google Gemini AI)")
     print("=" * 70)
     print()
-    print(f"📋 Found {len(existing_files)} file(s) to process")
+    print(f"📂 Processing directories: {', '.join(directories)}")
     print()
     
     try:
-        # Setup Gemini client (once for all files)
+        # Setup Gemini client (once for all directories)
         model = setup_gemini_client()
         model_name = getattr(model, '_model_name', None)
         print()
         
-        # Process all files with delay to avoid rate limiting
-        # You can adjust the delay if needed (5 seconds default)
+        # Delay between files (can be adjusted via environment variable)
         delay_between_files = int(os.getenv('GEMINI_BATCH_DELAY', '5'))
-        all_results = process_batch(existing_files, model, delay_between_files=delay_between_files, model_name=model_name)
         
-        # Combine all results and ensure filename is correctly mapped
-        all_rows = []
-        for filename, rows in all_results.items():
-            # Double-check filename mapping (in case it wasn't set correctly)
-            for row in rows:
-                row['filename'] = filename  # Ensure correct filename mapping
-            all_rows.extend(rows)
+        # Process each directory sequentially
+        all_directory_results = {}
         
-        if not all_rows:
-            print("=" * 70)
-            print("⚠️  No rows with Plot No. information found in any file.")
-            print("=" * 70)
-            return
+        for directory in directories:
+            dir_results = process_directory(directory, model, model_name, delay_between_files)
+            all_directory_results[directory] = dir_results
+            
+            # Create combined output for this directory
+            if dir_results:
+                all_rows = []
+                for filename, rows in dir_results.items():
+                    for row in rows:
+                        row['filename'] = filename  # Ensure correct filename mapping
+                    all_rows.extend(rows)
+                
+                if all_rows:
+                    df_all = pd.DataFrame(all_rows)
+                    columns_order = ['filename', 'Sr.No', 'Document No.& Year', 
+                                    'Name of Executant(s)', 'Name of Claimant(s)', 
+                                    'Survey No.', 'Plot No.']
+                    df_all = df_all[columns_order]
+                    
+                    # Save combined output in the directory
+                    combined_excel = f"{directory}/{directory}_combine_output.xlsx"
+                    os.makedirs(os.path.dirname(combined_excel) or '.', exist_ok=True)
+                    
+                    df_all.to_excel(combined_excel, index=False, engine='openpyxl')
+                    print(f"💾 Combined output saved: {combined_excel}")
+                    print(f"   Total rows: {len(all_rows)}")
+                    print()
+            
+            # Add delay between directories
+            if directory != directories[-1]:
+                print(f"⏳ Waiting {delay_between_files} seconds before next directory...")
+                print()
+                time.sleep(delay_between_files)
         
-        # Create combined DataFrame
-        df_all = pd.DataFrame(all_rows)
-        columns_order = ['filename', 'Sr.No', 'Document No.& Year', 
-                        'Name of Executant(s)', 'Name of Claimant(s)', 
-                        'Survey No.', 'Plot No.']
-        df_all = df_all[columns_order]
-        
-        # Display summary
+        # Overall summary
         print("=" * 70)
-        print(" " * 25 + "Batch Processing Summary")
-        print("=" * 70)
-        print()
-        print(f"📊 Total rows extracted: {len(all_rows)}")
-        print()
-        print("Results by file:")
-        for filename, rows in all_results.items():
-            print(f"  - {filename}: {len(rows)} rows")
-        print()
-        
-        # Display sample data (first 20 rows)
-        print("=" * 70)
-        print(" " * 25 + "Sample Data (first 20 rows)")
-        print("=" * 70)
-        print()
-        print(df_all.head(20).to_string(index=False))
-        if len(df_all) > 20:
-            print(f"\n... and {len(df_all) - 20} more rows")
-        print()
-        
-        # Save combined results
-        # Use ec2 directory if processing ec2 files, otherwise use ec
-        output_dir = "ec2" if any("ec2" in f for f in existing_files) else "ec"
-        combined_csv = f"{output_dir}/batch_extracted_gemini.csv"
-        combined_excel = f"{output_dir}/batch_extracted_gemini.xlsx"
-        
-        # Ensure output directory exists
-        os.makedirs(os.path.dirname(combined_csv) or '.', exist_ok=True)
-        
-        df_all.to_csv(combined_csv, index=False, encoding='utf-8-sig')
-        df_all.to_excel(combined_excel, index=False, engine='openpyxl')
-        
-        print("=" * 70)
-        print(" " * 25 + "Output Files")
+        print(" " * 25 + "Overall Summary")
         print("=" * 70)
         print()
-        print(f"💾 Combined CSV:  {combined_csv}")
-        print(f"💾 Combined Excel: {combined_excel}")
-        print()
         
-        # Show individual file outputs
-        print("Individual file outputs:")
-        for pdf_file in existing_files:
-            csv_file = pdf_file.replace('.pdf', '_extracted_gemini.csv')
-            excel_file = pdf_file.replace('.pdf', '_extracted_gemini.xlsx')
-            if os.path.exists(csv_file):
-                print(f"  - {csv_file}")
-            if os.path.exists(excel_file):
-                print(f"  - {excel_file}")
-        print()
+        total_processed = 0
+        for directory, dir_results in all_directory_results.items():
+            dir_total = sum(len(rows) for rows in dir_results.values())
+            total_processed += dir_total
+            print(f"  {directory}/: {dir_total} rows from {len(dir_results)} files")
         
+        print()
+        print(f"📊 Total across all directories: {total_processed} rows")
+        print()
         print("=" * 70)
-        print("✅ Batch extraction complete!")
+        print("✅ Batch extraction complete for all directories!")
         print("=" * 70)
         
     except Exception as e:
