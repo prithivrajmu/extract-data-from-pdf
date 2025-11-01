@@ -216,7 +216,7 @@ If you encounter errors, use Option 2 (Datalab API) instead.
    ```
 3. Run the Gemini script:
    ```bash
-   python extract_ec_data_gemini.py
+   python examples/extract_ec_data_gemini.py
    ```
 
 ### What the CLI scripts do:

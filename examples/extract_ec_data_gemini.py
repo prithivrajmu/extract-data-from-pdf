@@ -10,6 +10,7 @@ import os
 import json
 import sys
 import time
+import argparse
 from pathlib import Path
 from typing import List, Dict, Optional
 import pandas as pd
@@ -1018,10 +1019,116 @@ def process_directory(directory: str, model: genai.GenerativeModel, model_name: 
 
 
 def main():
-    """Main function to run the extraction script with batch processing."""
-    # Process directories in order: ec3, ec2, ec
-    directories = ["ec3", "ec2", "ec"]
+    """Main function to run the extraction script."""
+    parser = argparse.ArgumentParser(
+        description='Extract data from EC PDF files using Google Gemini AI',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='''
+Examples:
+  %(prog)s                                    # Use default test file (single file mode)
+  %(prog)s --file path/to/file.pdf           # Process single file
+  %(prog)s --input path/to/file.pdf          # Alternative syntax
+  %(prog)s --batch                            # Process directories: ec3, ec2, ec
+  %(prog)s --batch --dirs ec3 ec2 ec           # Process custom directories
+        '''
+    )
+    parser.add_argument(
+        '--file', '--input',
+        dest='pdf_file',
+        default='test_file/RG EC 103 3.pdf',
+        help='Path to a single PDF file to process (default: test_file/RG EC 103 3.pdf)'
+    )
+    parser.add_argument(
+        '--batch',
+        action='store_true',
+        help='Enable batch processing mode (processes directories instead of single file)'
+    )
+    parser.add_argument(
+        '--dirs',
+        nargs='+',
+        default=['ec3', 'ec2', 'ec'],
+        help='Directories to process in batch mode (default: ec3 ec2 ec)'
+    )
     
+    args = parser.parse_args()
+    
+    # Convert to absolute path if relative (for single file mode)
+    pdf_file = args.pdf_file
+    if not os.path.isabs(pdf_file):
+        if not os.path.exists(pdf_file):
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            parent_dir = os.path.dirname(script_dir)
+            test_path = os.path.join(parent_dir, pdf_file)
+            if os.path.exists(test_path):
+                pdf_file = test_path
+            else:
+                project_root = os.path.dirname(script_dir)
+                pdf_file = os.path.join(project_root, pdf_file)
+    
+    # Single file mode
+    if not args.batch:
+        if not os.path.exists(pdf_file):
+            print(f"❌ Error: File {pdf_file} not found!")
+            print(f"Please check the path and try again.")
+            return
+        
+        print("=" * 70)
+        print(" " * 15 + "EC Data Extraction (Google Gemini AI)")
+        print("=" * 70)
+        print()
+        
+        try:
+            model = setup_gemini_client()
+            model_name = getattr(model, '_model_name', None)
+            print()
+            
+            rows = extract_data_from_pdf_gemini(pdf_file, model, model_name=model_name)
+            
+            if not rows:
+                print("⚠️  No rows with Plot No. information found.")
+                return
+            
+            # Create DataFrame
+            df = pd.DataFrame(rows)
+            columns_order = ['filename', 'Sr.No', 'Document No.& Year', 
+                            'Name of Executant(s)', 'Name of Claimant(s)', 
+                            'Survey No.', 'Plot No.']
+            df = df[columns_order]
+            
+            # Display results
+            print("=" * 70)
+            print(" " * 25 + "Extracted Data")
+            print("=" * 70)
+            print()
+            print(df.to_string(index=False))
+            print()
+            
+            # Save to CSV
+            output_file = pdf_file.replace('.pdf', '_extracted_gemini.csv')
+            df.to_csv(output_file, index=False, encoding='utf-8-sig')
+            print(f"💾 Data saved to: {output_file}")
+            
+            # Save to Excel
+            output_excel = pdf_file.replace('.pdf', '_extracted_gemini.xlsx')
+            df.to_excel(output_excel, index=False, engine='openpyxl')
+            print(f"💾 Data saved to: {output_excel}")
+            print()
+            print("=" * 70)
+            print("✅ Extraction complete!")
+            print("=" * 70)
+            
+        except Exception as e:
+            print()
+            print("=" * 70)
+            print("❌ Error occurred during extraction")
+            print("=" * 70)
+            print(f"Error: {e}")
+            import traceback
+            traceback.print_exc()
+        return
+    
+    # Batch processing mode
+    directories = args.dirs
     print("=" * 70)
     print(" " * 10 + "EC Data Extraction - Batch Processing (Google Gemini AI)")
     print("=" * 70)

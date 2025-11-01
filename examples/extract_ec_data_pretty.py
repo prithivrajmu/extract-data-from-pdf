@@ -17,9 +17,7 @@ from pathlib import Path
 import pandas as pd
 from typing import List, Dict, Optional
 
-# Import from parent directory
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from chandra_output_formatter import ChandraOutputFormatter
+# Note: This script has its own format_chandra_line() function for formatting output
 
 
 def format_chandra_line(line: str) -> Optional[str]:

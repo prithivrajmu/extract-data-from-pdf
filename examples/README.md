@@ -10,10 +10,12 @@ This directory contains example command-line scripts for extracting data from EC
 - **`extract_ec_data_api.py`** - Uses Datalab Marker API (no local models required)
 - **`extract_ec_data_hf_api.py`** - Uses HuggingFace Inference Providers API
 - **`extract_ec_data_easyocr.py`** - Fast CPU-only extraction using EasyOCR
+- **`extract_ec_data_pytesseract.py`** - Fast extraction using PyTesseract (Tesseract OCR)
+- **`extract_ec_data_gemini.py`** - AI-powered extraction using Google Gemini
 
 ## Usage
 
-All scripts support the same command-line interface:
+Most scripts support the same command-line interface:
 
 ```bash
 # Use default test file (test_file/RG EC 103 3.pdf)
@@ -24,6 +26,24 @@ python examples/extract_ec_data.py --file path/to/your/file.pdf
 
 # Alternative syntax
 python examples/extract_ec_data.py --input path/to/your/file.pdf
+```
+
+### Special Usage - Gemini Script
+
+The `extract_ec_data_gemini.py` script supports both single file and batch processing:
+
+```bash
+# Single file mode (default)
+python examples/extract_ec_data_gemini.py
+
+# Single file with custom path
+python examples/extract_ec_data_gemini.py --file path/to/file.pdf
+
+# Batch processing mode (processes directories)
+python examples/extract_ec_data_gemini.py --batch
+
+# Batch processing with custom directories
+python examples/extract_ec_data_gemini.py --batch --dirs ec3 ec2 ec
 ```
 
 ## Default Behavior
@@ -60,6 +80,19 @@ Each script has different requirements:
   - Requires `easyocr` package
   - Fast CPU processing
   - No GPU required
+
+- **PyTesseract script** (`extract_ec_data_pytesseract.py`):
+  - Requires `pytesseract` package and Tesseract-OCR installed on system
+  - Fast CPU processing
+  - Works well for text-based PDFs
+  - No GPU required
+
+- **Gemini script** (`extract_ec_data_gemini.py`):
+  - Requires `google-generativeai` package
+  - Requires Gemini API key (set `GEMINI_API_KEY` in `.env` file)
+  - AI-powered extraction with high accuracy
+  - Supports single file and batch directory processing
+  - Internet connection required
 
 ## Getting Help
 

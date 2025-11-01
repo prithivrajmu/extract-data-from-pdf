@@ -85,7 +85,8 @@ All Python files must follow consistent naming patterns based on their purpose:
 #### Formatter Modules
 - **Pattern**: `*_formatter.py`
 - **Purpose**: Format output or display data
-- **Examples**: `chandra_output_formatter.py`
+- **Location**: Root directory (if used by core modules) or `tools/` (if standalone utility)
+- **Examples**: `chandra_output_formatter.py` (standalone utility - can be moved to tools/)
 
 #### API Client Modules
 - **Pattern**: `*_api.py`
@@ -114,7 +115,8 @@ All Python files must follow consistent naming patterns based on their purpose:
 #### Diagnostic Modules
 - **Pattern**: `diagnose_*.py`
 - **Purpose**: Diagnostic and debugging tools
-- **Examples**: `diagnose_chandra.py`
+- **Location**: `tools/` directory for standalone diagnostic utilities
+- **Examples**: `tools/diagnose_chandra.py`
 
 #### List/Listing Modules
 - **Pattern**: `list_*.py`
