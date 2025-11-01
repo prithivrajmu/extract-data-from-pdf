@@ -1,63 +1,181 @@
-# EC Data Extraction Script
+# PDF Data Extraction
 
-This script extracts data from EC (Encumbrance Certificate) PDF files using OCR.
+Extract structured data from PDF documents using multiple OCR and AI methods. Available as both a **Streamlit web application** and command-line scripts.
 
-## Requirements
+## 🚀 Quick Start - Streamlit Web App (Recommended)
+
+The easiest way to use this tool is through the Streamlit web interface.
+
+### Prerequisites
 
 - Python 3.8+
-- Chandra OCR (installed via pip/uv)
+- All dependencies from `requirements.txt`
 
-### Setup with uv (Recommended)
+### Installation
 
-This project uses [uv](https://github.com/astral-sh/uv) for fast package management.
+1. **Clone or navigate to the project directory:**
+   ```bash
+   cd extract_tn_ec
+   ```
 
-1. Install uv (if not already installed):
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-export PATH="$HOME/.local/bin:$PATH"  # Add to ~/.bashrc for persistence
-```
+2. **Set up virtual environment (using uv - recommended):**
+   ```bash
+   # Install uv if not already installed
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   export PATH="$HOME/.local/bin:$PATH"
+   
+   # Create virtual environment
+   uv venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   
+   # Install dependencies
+   uv pip install -r requirements.txt
+   ```
 
-2. Create virtual environment and install dependencies:
-```bash
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install -r requirements.txt
-```
+   **Or using pip:**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
 
-### Alternative: Setup with pip
+3. **Run the Streamlit app:**
+   ```bash
+   streamlit run streamlit_app.py
+   ```
 
-```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
+4. **Access the app:**
+   - The app will automatically open in your default browser
+   - Default URL: `http://localhost:8501`
+   - If it doesn't open automatically, copy the URL shown in the terminal
 
+### Streamlit App Features
 
-## Usage
+✨ **User-Friendly Interface:**
+- Clean, modern UI with intuitive controls
+- Real-time progress tracking during extraction
+- Interactive results display
+
+📄 **Multiple Extraction Methods:**
+- **EasyOCR** - Fast CPU-based OCR, lightweight (~100MB models), quick setup, no API key needed
+- **PyTesseract** - Google's Tesseract OCR engine, fast and lightweight for text-based PDFs
+- **Local Model** - Download and run Chandra OCR locally, high accuracy, supports GPU/CPU
+- **HuggingFace** - Cloud-based OCR via Inference API, requires API key
+- **Datalab API** - High-accuracy OCR via API, best for structured documents (recommended)
+- **Gemini AI** - Google's AI-powered extraction with context understanding and custom fields
+- **Deepseek AI** - AI-powered extraction with vision capabilities and custom fields
+
+🔑 **API Key Management:**
+- Test API keys before use
+- Secure local storage in `.env` file
+- Support for multiple providers (HuggingFace, Datalab, Gemini, Deepseek)
+
+📋 **Flexible Field Selection:**
+- Pre-defined field templates
+- Custom field extraction (define your own fields)
+- Selective field export
+
+💾 **Multiple Output Formats:**
+- CSV
+- Excel (XLSX)
+- JSON
+- Markdown (MD)
+- Select multiple formats at once
+
+📤 **Batch Processing:**
+- Upload single or multiple PDF files
+- Process files sequentially with progress tracking
+- Results aggregated across all files
+
+### Using the Streamlit App
+
+1. **Configure Extraction Method:**
+   - Select from: EasyOCR, HuggingFace, Datalab API, Gemini AI, or Deepseek AI
+   - For HuggingFace: Enter model name (default: `datalab-to/chandra`)
+   - For API methods: Enter and test your API keys
+
+2. **Set Up API Keys (if using API methods):**
+   - Enter API keys in the sidebar
+   - Click "Test" buttons to verify keys work
+   - Click "💾 Save All Keys Locally" to persist keys
+   - ⚠️ **Important:** Make a backup copy of the `.env` file
+
+3. **Select Fields to Extract:**
+   - Choose from default fields, or
+   - Click "➕ Add Custom Fields" to define your own fields
+   - Custom fields work best with Gemini AI and Deepseek AI
+
+4. **Choose Output Format(s):**
+   - Select one or more formats: CSV, Excel, JSON, Markdown
+   - ⚠️ **Required:** At least one format must be selected
+
+5. **Upload PDF Files:**
+   - Drag and drop or click to upload
+   - Supports single or multiple files
+   - File validation ensures PDFs are valid
+
+6. **Extract Data:**
+   - Click "🚀 Extract Data" button
+   - Watch real-time progress with detailed status updates
+   - View metrics: Files Processed, Rows Extracted, Success Rate
+
+7. **Download Results:**
+   - View extracted data in interactive table
+   - Download in your selected format(s)
+   - Each format has its own download button
+
+### Getting API Keys
+
+**Datalab API (Recommended for OCR):**
+- Sign up at [https://datalab.to](https://datalab.to)
+- Get your API key from the dashboard
+- Free tier available
+
+**HuggingFace:**
+- Sign up at [https://huggingface.co](https://huggingface.co)
+- Go to Settings → Access Tokens
+- Create a new token with read permissions
+
+**Gemini AI:**
+- Get API key from [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
+- Create a new API key
+
+**Deepseek AI:**
+- Sign up at [https://platform.deepseek.com](https://platform.deepseek.com)
+- Get your API key from the dashboard
+
+---
+
+## 📟 Command-Line Usage
+
+For script-based automation, you can use the CLI scripts directly.
 
 ### Option 1: Using Local Model (CPU/GPU)
 
 Make sure your virtual environment is activated:
 ```bash
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-python extract_ec_data_cpu.py  # CPU-only version
+python examples/extract_ec_data_cpu.py  # CPU-only version
 # or
-python extract_ec_data.py     # Auto-detects GPU if available
+python examples/extract_ec_data.py      # Auto-detects GPU if available
+# Use custom file:
+python examples/extract_ec_data.py --file path/to/your/file.pdf
 ```
 
-### Option 2: Using Datalab API (No Local Model Required) - Recommended
+### Option 2: Using Datalab API (No Local Model Required)
 
 Uses Datalab Marker API - no need to download models locally!
 
 1. Get your free API key from [Datalab](https://datalab.to)
 2. Create a `.env` file:
    ```bash
-   cp .env.example .env
-   # Edit .env and add: DATALAB_API_KEY=your_key_here
+   echo "DATALAB_API_KEY=your_key_here" > .env
    ```
 3. Run the API script:
    ```bash
-   python extract_ec_data_api.py
+   python examples/extract_ec_data_api.py
+   # Or with custom file:
+   python examples/extract_ec_data_api.py --file path/to/your/file.pdf
    ```
 
 **Benefits of Datalab API:**
@@ -78,36 +196,162 @@ If you encounter errors, use Option 2 (Datalab API) instead.
 1. Get your free API token from [HuggingFace](https://huggingface.co/settings/tokens)
 2. Create/update `.env` file:
    ```bash
-   cp .env.example .env
-   # Edit .env and add: HF_API_KEY=your_token_here
+   echo "HF_API_KEY=your_token_here" >> .env
    ```
 3. Run the HF API script:
    ```bash
-   python extract_ec_data_hf_api.py
+   python examples/extract_ec_data_hf_api.py
+   # Or with custom file:
+   python examples/extract_ec_data_hf_api.py --file path/to/your/file.pdf
    ```
 
 **Documentation:** https://huggingface.co/docs/inference-providers
 
-### What the scripts do:
+### Option 4: Using Gemini AI
 
-1. Process the PDF file `ec/RG EC 103 3.pdf`
+1. Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. Create/update `.env` file:
+   ```bash
+   echo "GEMINI_API_KEY=your_key_here" >> .env
+   ```
+3. Run the Gemini script:
+   ```bash
+   python examples/extract_ec_data_gemini.py
+   ```
+
+### What the CLI scripts do:
+
+1. Process PDF file(s) from specified directories or files
 2. Extract text using OCR (local model or API)
-3. Parse table rows that contain Plot No./ information
+3. Parse table rows that contain relevant information
 4. Export results to CSV and Excel files
 
-## Extracted Fields
+---
 
-- filename
-- Sr.No
-- Document No.& Year
-- Name of Executant(s)
-- Name of Claimant(s)
-- Survey No./
-- Plot No./
+## 📋 Default Extracted Fields
 
-## Output Files
+The following fields are extracted by default:
 
+- `filename` - Source PDF filename
+- `Sr.No` - Serial number
+- `Document No.& Year` - Document number and year
+- `Name of Executant(s)` - Name(s) of executant(s)
+- `Name of Claimant(s)` - Name(s) of claimant(s)
+- `Survey No.` - Survey number
+- `Plot No.` - Plot number (required field)
+
+**Note:** You can define custom fields in the Streamlit app when using AI-based extraction methods (Gemini, Deepseek).
+
+---
+
+## 📁 Output Files
+
+**CLI Scripts:**
 - `*_ocr_text.txt`: Raw OCR text for debugging
 - `*_extracted.csv`: Extracted data in CSV format
 - `*_extracted.xlsx`: Extracted data in Excel format
 
+**Streamlit App:**
+- Download in selected format(s): CSV, Excel, JSON, or Markdown
+- Results shown in interactive table before download
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
+
+---
+
+## 🔧 Requirements
+
+See `requirements.txt` for complete dependency list. Key dependencies:
+
+- `streamlit>=1.28.0` - Web application framework
+- `pandas>=2.0.0` - Data manipulation
+- `openpyxl>=3.1.0` - Excel file support
+- `easyocr>=1.7.0` - EasyOCR library
+- `pytesseract>=0.3.10` - PyTesseract wrapper
+- `pdf2image>=1.16.3` - PDF to image conversion
+- `google-generativeai>=0.3.0` - Gemini AI support
+- `requests>=2.31.0` - API requests
+- `python-dotenv>=1.0.0` - Environment variable management
+
+### Additional System Requirements
+
+**For PyTesseract:**
+You need to install Tesseract OCR engine separately:
+
+- **Linux (Debian/Ubuntu):**
+  ```bash
+  sudo apt-get install tesseract-ocr
+  ```
+
+- **macOS:**
+  ```bash
+  brew install tesseract
+  ```
+
+- **Windows:**
+  Download installer from: https://github.com/UB-Mannheim/tesseract/wiki
+
+**For pdf2image (converting PDFs to images):**
+- **Linux:** Requires `poppler-utils`
+  ```bash
+  sudo apt-get install poppler-utils
+  ```
+- **macOS:**
+  ```bash
+  brew install poppler
+  ```
+- **Windows:** Download poppler from: https://github.com/oschwartz10612/poppler-windows/releases
+
+---
+
+## 🛠️ Troubleshooting
+
+### Streamlit App Issues
+
+**App won't start:**
+```bash
+# Make sure dependencies are installed
+pip install -r requirements.txt
+
+# Check if port 8501 is in use
+# Change port if needed:
+streamlit run streamlit_app.py --server.port 8502
+```
+
+**API key not working:**
+- Use the "Test" buttons in the sidebar to verify keys
+- Check that keys are saved in `.env` file
+- Ensure `.env` file is in the project root directory
+
+**No results extracted:**
+- Try a different extraction method
+- For AI methods (Gemini/Deepseek), ensure API keys are valid
+- Check PDF file quality - some PDFs may require better OCR
+
+### CLI Script Issues
+
+See `TROUBLESHOOTING.md` and `MODEL_LOADING_ISSUES.md` for detailed troubleshooting guides.
+
+---
+
+## 📝 License
+
+See `LICENSE` file for details.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on how to contribute to this project.
+
+---
+
+## 📚 Additional Documentation
+
+- `GPU_SETUP.md` - GPU configuration guide
+- `MODEL_LOADING_ISSUES.md` - Troubleshooting model loading
+- `TROUBLESHOOTING.md` - General troubleshooting guide

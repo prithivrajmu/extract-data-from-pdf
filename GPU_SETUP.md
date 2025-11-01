@@ -43,7 +43,8 @@ Once `nvidia-smi` shows your GPU, the extraction script will automatically:
 
 ### Test GPU Access
 ```bash
-python check_gpu.py
+python -c "from gpu_check_utils import check_gpu_comprehensive; print(check_gpu_comprehensive())"
+# Or use the Streamlit app which has GPU status built-in
 ```
 
 Should show:
@@ -67,11 +68,14 @@ Should show:
 
 ## 🛠️ Scripts Updated
 
-I've updated both extraction scripts to automatically use GPU when available:
-- `extract_ec_data.py` - Will detect and use GPU
-- `extract_ec_data_pretty.py` - Will detect and use GPU
+All extraction scripts in `examples/` automatically use GPU when available:
+- `examples/extract_ec_data.py` - Will detect and use GPU
+- `examples/extract_ec_data_pretty.py` - Will detect and use GPU
 
 No changes needed - they'll automatically use GPU once the driver is loaded.
+
+**GPU Setup Script:**
+- `tools/setup_gpu.sh` - Run this for GPU setup guidance
 
 ## ⚙️ If Driver Needs Update
 
