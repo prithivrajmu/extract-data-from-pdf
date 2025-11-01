@@ -1,40 +1,42 @@
 #!/usr/bin/env python3
 """
 Model information and links for local and HuggingFace OCR models.
+Now supports dynamic fetching from HuggingFace Hub API.
 """
 
-from typing import List, Dict
+from typing import List, Dict, Optional
+from model_fetcher import (
+    get_available_local_models,
+    get_popular_ocr_models,
+    clear_cache,
+    fetch_ocr_models_from_huggingface
+)
 
 
-def get_local_ocr_models() -> List[Dict[str, str]]:
+def get_local_ocr_models(api_key: Optional[str] = None, use_dynamic: bool = True) -> List[Dict[str, str]]:
     """
     Get list of available local OCR models with information.
+    Now supports dynamic fetching from HuggingFace Hub API.
     
+    Args:
+        api_key: Optional HuggingFace API key for authenticated requests
+        use_dynamic: Whether to fetch models dynamically from HuggingFace
+        
     Returns:
         List of dictionaries with model information
     """
-    return [
-        {
-            'id': 'datalab-to/chandra',
-            'name': 'Chandra OCR',
-            'description': 'High-accuracy OCR model for documents, tables, and forms. Best for structured data extraction.',
-            'size': '~2GB',
-            'url': 'https://huggingface.co/datalab-to/chandra',
-            'download_time': '10-20 minutes (first time)',
-            'supports_gpu': True,
-            'supports_cpu': True
-        },
-        {
-            'id': 'PaddleOCR',
-            'name': 'PaddleOCR (via EasyOCR)',
-            'description': 'Fast OCR model, lightweight and quick. Good for simple text extraction.',
-            'size': '~100MB',
-            'url': 'https://github.com/JaidedAI/EasyOCR',
-            'download_time': '1-2 minutes (first time)',
-            'supports_gpu': False,
-            'supports_cpu': True
-        }
-    ]
+    if use_dynamic:
+        # Try to get models dynamically
+        try:
+            models = get_available_local_models(api_key=api_key)
+            if models:
+                return models
+        except Exception:
+            # Fallback to static list
+            pass
+    
+    # Fallback to popular models
+    return get_popular_ocr_models()
 
 
 def get_huggingface_ocr_models() -> List[Dict[str, str]]:

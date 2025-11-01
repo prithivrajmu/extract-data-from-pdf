@@ -15,13 +15,24 @@ def extract_with_local_model(pdf_path: str, model_name: str = 'datalab-to/chandr
     
     Args:
         pdf_path: Path to PDF file
-        model_name: Model name/identifier (currently only 'datalab-to/chandra' supported)
+        model_name: Model name/identifier (currently only 'datalab-to/chandra' fully supported via Chandra CLI)
         use_cpu: If True, force CPU mode
         use_pretty: If True, use pretty output formatter
         
     Returns:
         List of extracted row dictionaries
     """
+    # Currently only Chandra is fully supported via our extraction scripts
+    # Other models would need custom integration
+    if model_name != 'datalab-to/chandra' and not model_name.startswith('datalab-to/chandra'):
+        # For now, fall back to Chandra or raise error
+        # In future, we can add support for other models
+        raise ValueError(
+            f"Model '{model_name}' is not yet fully supported for local extraction. "
+            f"Currently only 'datalab-to/chandra' is supported. "
+            f"Please use Chandra or another extraction method (API-based) for other models."
+        )
+    
     if use_cpu:
         from extract_ec_data_cpu import extract_data_from_pdf
     elif use_pretty:

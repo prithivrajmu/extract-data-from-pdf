@@ -41,6 +41,7 @@ from model_info import (
     get_huggingface_ocr_models,
     get_model_search_url
 )
+from model_fetcher import clear_cache, fetch_ocr_models_from_huggingface
 
 # Page configuration
 st.set_page_config(
@@ -187,8 +188,32 @@ def main():
             st.subheader("🖥️ Local Model Configuration")
             st.info("📥 Models will be downloaded automatically on first use (~2GB for Chandra)")
             
+            # Get HuggingFace API key if available (defined later in sidebar)
+            hf_api_key_available = st.session_state.api_keys.get('huggingface', '')
+            
+            # Model fetching options
+            col_refresh, col_info = st.columns([1, 2])
+            with col_refresh:
+                refresh_models = st.button("🔄 Refresh Model List", help="Fetch latest models from HuggingFace Hub")
+            
+            if refresh_models:
+                clear_cache()
+                st.success("✅ Cache cleared! Model list will refresh on next selection.")
+            
+            # Try to use HuggingFace API key if available
+            use_dynamic = bool(hf_api_key_available) or refresh_models
+            
             # Model selection
-            local_models = get_local_ocr_models()
+            try:
+                with st.spinner("Loading available models..." if use_dynamic else ""):
+                    local_models = get_local_ocr_models(
+                        api_key=hf_api_key_available if hf_api_key_available else None,
+                        use_dynamic=use_dynamic
+                    )
+            except Exception as e:
+                st.warning(f"⚠️ Could not fetch models dynamically: {e}. Using default models.")
+                local_models = get_local_ocr_models(use_dynamic=False)
+            
             model_options = [f"{m['name']} ({m['id']})" for m in local_models]
             model_ids = [m['id'] for m in local_models]
             
@@ -202,13 +227,34 @@ def main():
             
             # Show model info
             selected_model_info = local_models[selected_model_idx]
+            
+            # Check if model is supported
+            is_supported = local_model == 'datalab-to/chandra' or local_model.startswith('datalab-to/chandra')
+            
             with st.expander(f"ℹ️ About {selected_model_info['name']}"):
                 st.write(f"**Description:** {selected_model_info['description']}")
-                st.write(f"**Model Size:** {selected_model_info['size']}")
-                st.write(f"**Download Time:** {selected_model_info['download_time']}")
+                st.write(f"**Model Size:** {selected_model_info.get('size', 'Unknown')}")
+                st.write(f"**Download Time:** {selected_model_info.get('download_time', 'Unknown')}")
                 st.write(f"**GPU Support:** {'Yes' if selected_model_info.get('supports_gpu') else 'No'}")
                 st.write(f"**CPU Support:** {'Yes' if selected_model_info.get('supports_cpu') else 'No'}")
+                if selected_model_info.get('downloads'):
+                    st.write(f"**Downloads:** {selected_model_info['downloads']:,}")
+                if selected_model_info.get('verified'):
+                    st.write("**Status:** ✅ Verified")
+                
+                # Show support status
+                if is_supported:
+                    st.success("✅ **Fully Supported** - Ready to use with this extraction method")
+                else:
+                    st.warning("⚠️ **Limited Support** - Currently only Chandra (datalab-to/chandra) is fully supported for local extraction. This model may be available via API methods.")
+                
                 st.markdown(f"**Model Page:** [{selected_model_info['name']}]({selected_model_info['url']})")
+            
+            # Info about dynamic fetching
+            if not hf_api_key_available:
+                st.caption("💡 **Tip:** Add your HuggingFace API key below to fetch the latest models automatically")
+            else:
+                st.caption("✅ Using HuggingFace API key - models are fetched automatically")
             
             # Options for Chandra model
             if local_model == 'datalab-to/chandra':
