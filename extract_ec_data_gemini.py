@@ -278,6 +278,241 @@ def should_skip_pdf(pdf_path: str) -> bool:
     return os.path.exists(csv_output) or os.path.exists(excel_output)
 
 
+def extract_data_from_pdf_gemini_custom(pdf_path: str, model: genai.GenerativeModel, custom_fields: Optional[List[str]] = None, max_retries: int = 3, model_name: str = None) -> List[Dict[str, str]]:
+    """
+    Extract data from PDF using Google Gemini AI with custom fields support.
+    
+    Args:
+        pdf_path: Path to the PDF file
+        model: Configured Gemini model instance
+        custom_fields: Optional list of custom field names to extract
+        max_retries: Maximum number of retry attempts for API calls
+        model_name: Name of the model being used (for fallback checks)
+        
+    Returns:
+        List of dictionaries with extracted row data
+    """
+    from prompt_utils import create_custom_extraction_prompt, create_lenient_custom_prompt
+    
+    filename = os.path.basename(pdf_path)
+    current_model_name = model_name or getattr(model, '_model_name', 'unknown')
+    
+    if not os.path.exists(pdf_path):
+        raise FileNotFoundError(f"PDF file not found: {pdf_path}")
+    
+    print(f"📄 Processing PDF: {filename}")
+    print("🤖 Using Google Gemini AI for extraction...")
+    if custom_fields:
+        print(f"   Custom fields: {', '.join(custom_fields)}")
+    print()
+    
+    pdf_file = None
+    
+    try:
+        # Upload PDF file to Gemini API with retry logic
+        print("📤 Uploading PDF to Gemini API...")
+        for retry in range(max_retries):
+            try:
+                pdf_file = genai.upload_file(path=pdf_path)
+                print(f"✅ PDF uploaded (file URI: {pdf_file.uri})")
+                break
+            except Exception as e:
+                if retry < max_retries - 1:
+                    wait_time = (retry + 1) * 5
+                    print(f"   ⚠️  Upload failed (attempt {retry + 1}/{max_retries}): {e}")
+                    print(f"   Waiting {wait_time} seconds before retry...")
+                    time.sleep(wait_time)
+                else:
+                    raise Exception(f"Failed to upload PDF after {max_retries} attempts: {e}")
+        
+        # Wait for file to be processed
+        max_wait_time = 60
+        wait_interval = 2
+        elapsed_time = 0
+        
+        while pdf_file.state.name == "PROCESSING" and elapsed_time < max_wait_time:
+            print("   Waiting for file to be processed...")
+            time.sleep(wait_interval)
+            elapsed_time += wait_interval
+            pdf_file = genai.get_file(pdf_file.name)
+        
+        if pdf_file.state.name == "PROCESSING":
+            raise Exception(f"File processing timeout after {max_wait_time} seconds")
+        
+        if pdf_file.state.name == "FAILED":
+            raise Exception("PDF file upload failed")
+        
+        # Create extraction prompt (with custom fields if provided)
+        if custom_fields:
+            prompt = create_custom_extraction_prompt(custom_fields)
+        else:
+            prompt = create_extraction_prompt()
+        
+        # Submit to Gemini with retry logic
+        print("🔍 Extracting data with AI...")
+        print("   (This may take 30-60 seconds)")
+        
+        response = None
+        for retry in range(max_retries):
+            try:
+                try:
+                    response = model.generate_content(
+                        [prompt, pdf_file],
+                        generation_config={
+                            "temperature": 0.1,
+                            "response_mime_type": "application/json",
+                        }
+                    )
+                except Exception as gen_error:
+                    if "model name format" in str(gen_error).lower() or "400" in str(gen_error):
+                        print(f"   ⚠️  Model format issue detected, trying alternative approach...")
+                        model_name_clean = getattr(model, '_model_name', 'gemini-2.0-flash')
+                        model = genai.GenerativeModel(model_name_clean)
+                        response = model.generate_content(
+                            [prompt, pdf_file],
+                            generation_config={
+                                "temperature": 0.1,
+                                "response_mime_type": "application/json",
+                            }
+                        )
+                    else:
+                        raise gen_error
+                break
+            except Exception as e:
+                error_msg = str(e)
+                
+                if "429" in error_msg or "quota" in error_msg.lower() or "rate limit" in error_msg.lower():
+                    if retry < max_retries - 1:
+                        wait_time = (retry + 1) * 10
+                        print(f"   ⚠️  Rate limit hit (attempt {retry + 1}/{max_retries})")
+                        print(f"   Waiting {wait_time} seconds before retry...")
+                        time.sleep(wait_time)
+                        continue
+                
+                if retry == max_retries - 1:
+                    raise Exception(f"Failed to extract data after {max_retries} attempts: {e}")
+                
+                wait_time = (retry + 1) * 5
+                print(f"   ⚠️  Extraction failed (attempt {retry + 1}/{max_retries}): {e}")
+                print(f"   Waiting {wait_time} seconds before retry...")
+                time.sleep(wait_time)
+        
+        if response is None:
+            raise Exception("Failed to get response from Gemini API after all retries")
+        
+        # Extract and parse JSON from response
+        response_text = response.text.strip()
+        extracted_data = parse_json_response(response_text)
+        
+        # Validate data format
+        if not isinstance(extracted_data, list):
+            if isinstance(extracted_data, dict):
+                extracted_data = [extracted_data]
+            else:
+                extracted_data = []
+        
+        # Format rows - dynamically handle fields
+        formatted_rows = []
+        for row in extracted_data:
+            if not isinstance(row, dict):
+                continue
+            
+            # Build formatted row with all fields from the extracted data
+            formatted_row = {'filename': filename}
+            
+            if custom_fields:
+                # Use custom fields
+                for field in custom_fields:
+                    formatted_row[field] = str(row.get(field, '')).strip()
+            else:
+                # Use default fields
+                formatted_row.update({
+                    'Sr.No': str(row.get('Sr.No', '')).strip(),
+                    'Document No.& Year': str(row.get('Document No.& Year', '')).strip(),
+                    'Name of Executant(s)': str(row.get('Name of Executant(s)', '')).strip(),
+                    'Name of Claimant(s)': str(row.get('Name of Claimant(s)', '')).strip(),
+                    'Survey No.': str(row.get('Survey No.', row.get('Survey No./', ''))).strip(),
+                    'Plot No.': str(row.get('Plot No.', row.get('Plot No./', ''))).strip(),
+                })
+            
+            # Only include rows with at least one non-empty field (besides filename)
+            non_empty_fields = [v for k, v in formatted_row.items() if k != 'filename' and v.strip()]
+            if non_empty_fields:
+                formatted_rows.append(formatted_row)
+        
+        # If no rows found, try with lenient prompt
+        if len(formatted_rows) == 0 and not custom_fields:
+            print("⚠️  No rows found with standard extraction.")
+            print("🔄 Attempting double verification with lenient rules...")
+            
+            lenient_prompt = create_lenient_extraction_prompt()
+            
+            try:
+                print("🔍 Re-extracting with lenient rules...")
+                lenient_response = model.generate_content(
+                    [lenient_prompt, pdf_file],
+                    generation_config={
+                        "temperature": 0.2,
+                        "response_mime_type": "application/json",
+                    }
+                )
+                
+                lenient_response_text = lenient_response.text.strip()
+                lenient_extracted_data = parse_json_response(lenient_response_text)
+                
+                if not isinstance(lenient_extracted_data, list):
+                    if isinstance(lenient_extracted_data, dict):
+                        lenient_extracted_data = [lenient_extracted_data]
+                    else:
+                        lenient_extracted_data = []
+                
+                lenient_rows = []
+                for row in lenient_extracted_data:
+                    if not isinstance(row, dict):
+                        continue
+                    
+                    formatted_row = {
+                        'filename': filename,
+                        'Sr.No': str(row.get('Sr.No', '')).strip(),
+                        'Document No.& Year': str(row.get('Document No.& Year', '')).strip(),
+                        'Name of Executant(s)': str(row.get('Name of Executant(s)', '')).strip(),
+                        'Name of Claimant(s)': str(row.get('Name of Claimant(s)', '')).strip(),
+                        'Survey No.': str(row.get('Survey No.', row.get('Survey No./', ''))).strip(),
+                        'Plot No.': str(row.get('Plot No.', row.get('Plot No./', ''))).strip(),
+                    }
+                    
+                    if formatted_row['Plot No.'].strip():
+                        lenient_rows.append(formatted_row)
+                
+                if lenient_rows:
+                    print(f"✅ Lenient extraction found {len(lenient_rows)} rows")
+                    formatted_rows = lenient_rows
+            except Exception as e:
+                print(f"⚠️  Lenient extraction failed: {e}")
+        
+        # Clean up uploaded file
+        if pdf_file:
+            try:
+                genai.delete_file(pdf_file.name)
+                print("🧹 Cleaned up uploaded file")
+            except Exception as e:
+                print(f"   Note: Could not delete uploaded file: {e}")
+        
+        print(f"✅ Extracted {len(formatted_rows)} rows")
+        print()
+        
+        return formatted_rows
+        
+    except Exception as e:
+        print(f"❌ Error processing PDF {filename}: {e}")
+        if pdf_file:
+            try:
+                genai.delete_file(pdf_file.name)
+            except:
+                pass
+        raise Exception(f"Failed to process {filename}: {e}")
+
+
 def extract_data_from_pdf_gemini(pdf_path: str, model: genai.GenerativeModel, max_retries: int = 3, model_name: str = None) -> List[Dict[str, str]]:
     """
     Extract data from PDF using Google Gemini AI with retry logic.
