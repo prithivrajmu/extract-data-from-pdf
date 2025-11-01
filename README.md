@@ -57,11 +57,13 @@ The easiest way to use this tool is through the Streamlit web interface.
 - Interactive results display
 
 📄 **Multiple Extraction Methods:**
-- **EasyOCR** - Fast local OCR (no API key needed)
-- **HuggingFace** - Cloud-based OCR with model selection
-- **Datalab API** - High-accuracy OCR via API (recommended)
-- **Gemini AI** - Google's AI-powered extraction
-- **Deepseek AI** - AI-powered extraction with vision
+- **EasyOCR** - Fast CPU-based OCR, lightweight (~100MB models), quick setup, no API key needed
+- **PyTesseract** - Google's Tesseract OCR engine, fast and lightweight for text-based PDFs
+- **Local Model** - Download and run Chandra OCR locally, high accuracy, supports GPU/CPU
+- **HuggingFace** - Cloud-based OCR via Inference API, requires API key
+- **Datalab API** - High-accuracy OCR via API, best for structured documents (recommended)
+- **Gemini AI** - Google's AI-powered extraction with context understanding and custom fields
+- **Deepseek AI** - AI-powered extraction with vision capabilities and custom fields
 
 🔑 **API Key Management:**
 - Test API keys before use
@@ -263,10 +265,40 @@ See `requirements.txt` for complete dependency list. Key dependencies:
 - `pandas>=2.0.0` - Data manipulation
 - `openpyxl>=3.1.0` - Excel file support
 - `easyocr>=1.7.0` - EasyOCR library
+- `pytesseract>=0.3.10` - PyTesseract wrapper
 - `pdf2image>=1.16.3` - PDF to image conversion
 - `google-generativeai>=0.3.0` - Gemini AI support
 - `requests>=2.31.0` - API requests
 - `python-dotenv>=1.0.0` - Environment variable management
+
+### Additional System Requirements
+
+**For PyTesseract:**
+You need to install Tesseract OCR engine separately:
+
+- **Linux (Debian/Ubuntu):**
+  ```bash
+  sudo apt-get install tesseract-ocr
+  ```
+
+- **macOS:**
+  ```bash
+  brew install tesseract
+  ```
+
+- **Windows:**
+  Download installer from: https://github.com/UB-Mannheim/tesseract/wiki
+
+**For pdf2image (converting PDFs to images):**
+- **Linux:** Requires `poppler-utils`
+  ```bash
+  sudo apt-get install poppler-utils
+  ```
+- **macOS:**
+  ```bash
+  brew install poppler
+  ```
+- **Windows:** Download poppler from: https://github.com/oschwartz10612/poppler-windows/releases
 
 ---
 

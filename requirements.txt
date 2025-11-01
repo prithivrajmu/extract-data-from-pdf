@@ -5,6 +5,7 @@ psutil>=5.9.0
 pdf2image>=1.16.3
 Pillow>=10.0.0
 easyocr>=1.7.0
+pytesseract>=0.3.10
 fuzzywuzzy>=0.18.0
 python-Levenshtein>=0.12.0
 requests>=2.31.0

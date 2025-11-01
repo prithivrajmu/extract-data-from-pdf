@@ -150,12 +150,32 @@ def main():
         
         # OCR Method Selection
         st.subheader("🔧 Extraction Method")
-        ocr_method = st.radio(
+        
+        # Define methods with tooltips/descriptions
+        method_descriptions = {
+            "EasyOCR": "Fast CPU-based OCR using EasyOCR library. Lightweight (~100MB models), quick setup, good for simple text extraction. No API key needed.",
+            "PyTesseract": "Google's Tesseract OCR engine via PyTesseract. Fast, lightweight, works well for text-based PDFs. Requires Tesseract-OCR installed on system.",
+            "Local Model": "Download and run OCR models locally (Chandra OCR). High accuracy for documents/tables. First run downloads ~2GB models. Supports GPU/CPU.",
+            "HuggingFace": "Use HuggingFace Inference API for OCR. Requires HuggingFace API key. Cloud-based, no local model download needed.",
+            "Datalab API": "High-accuracy OCR via Datalab Marker API. Best for structured documents and tables. Requires Datalab API key. Recommended for production.",
+            "Gemini AI": "Google's Gemini AI for intelligent data extraction. Understands context and can extract custom fields. Requires Gemini API key.",
+            "Deepseek AI": "Deepseek AI for document extraction with vision capabilities. Can extract custom fields. Requires Deepseek API key."
+        }
+        
+        # Create selectbox with formatted labels that include descriptions
+        method_options = list(method_descriptions.keys())
+        
+        ocr_method = st.selectbox(
             "Select extraction method",
-            options=["EasyOCR", "Local Model", "HuggingFace", "Datalab API", "Gemini AI", "Deepseek AI"],
+            options=method_options,
             index=0,
-            label_visibility="collapsed"
+            help="Choose an OCR method. Hover over each option to see details, or see description below.",
+            key="ocr_method_select"
         )
+        
+        # Show detailed description for selected method with info box
+        if ocr_method in method_descriptions:
+            st.info(f"**{ocr_method}:** {method_descriptions[ocr_method]}")
         
         # Local Model Selection
         local_model = None
@@ -766,6 +786,7 @@ def main():
             # Map method names
             method_map = {
                 'EasyOCR': 'easyocr',
+                'PyTesseract': 'pytesseract',
                 'Local Model': 'local',
                 'HuggingFace': 'huggingface',
                 'Datalab API': 'datalab',
@@ -775,8 +796,8 @@ def main():
             selected_method = method_map[ocr_method]
             
             # Check API key requirements
-            if selected_method == 'local':
-                # No API key needed for local models
+            if selected_method in ['local', 'easyocr', 'pytesseract']:
+                # No API key needed for local models or free OCR
                 pass
             elif selected_method == 'huggingface' and not api_keys_dict.get('huggingface'):
                 st.error("❌ HuggingFace API key is required for this method")

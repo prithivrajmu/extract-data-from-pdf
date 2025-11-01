@@ -47,6 +47,36 @@ def extract_with_local_model(pdf_path: str, model_name: str = 'datalab-to/chandr
     return normalized_rows
 
 
+def extract_with_pytesseract(pdf_path: str) -> List[Dict[str, str]]:
+    """
+    Extract data using PyTesseract (Google's Tesseract OCR).
+    
+    Args:
+        pdf_path: Path to PDF file
+        
+    Returns:
+        List of extracted row dictionaries
+    """
+    from extract_ec_data_pytesseract import extract_data_from_pdf
+    
+    rows = extract_data_from_pdf(pdf_path)
+    
+    # Normalize field names to match standard format
+    normalized_rows = []
+    for row in rows:
+        if 'Plot No' in row and 'Plot No.' not in row:
+            row['Plot No.'] = row.pop('Plot No')
+        if 'Survey No' in row and 'Survey No.' not in row:
+            row['Survey No.'] = row.pop('Survey No')
+        if 'Survey No./' in row:
+            row['Survey No.'] = row.pop('Survey No./')
+        if 'Plot No./' in row:
+            row['Plot No.'] = row.pop('Plot No./')
+        normalized_rows.append(row)
+    
+    return normalized_rows
+
+
 def extract_with_easyocr(pdf_path: str) -> List[Dict[str, str]]:
     """
     Extract data using EasyOCR.
@@ -206,6 +236,10 @@ def extract_data(
             use_cpu=options.get('use_cpu', False),
             use_pretty=options.get('use_pretty', False)
         )
+    
+    elif method == 'pytesseract' or method == 'tesseract':
+        # PyTesseract doesn't support custom fields dynamically, returns all fields
+        return extract_with_pytesseract(pdf_path)
     
     elif method == 'easyocr':
         # EasyOCR doesn't support custom fields dynamically, returns all fields
