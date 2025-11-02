@@ -29,6 +29,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          uv sync --dev
           uv pip install --system build twine
 
       - name: Extract version from tag
