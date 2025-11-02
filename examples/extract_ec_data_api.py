@@ -10,6 +10,7 @@ import argparse
 import os
 import re
 import time
+from typing import Any
 
 import pandas as pd
 import requests
@@ -136,7 +137,7 @@ def extract_text_from_pdf_datalab_api(pdf_path: str, api_key: str) -> tuple:
         print()
 
         # Build structured data
-        structured_data = {
+        structured_data: dict[str, Any] = {
             "pages": [],
             "page_count": page_count,
             "metadata": result.get("metadata", {}),

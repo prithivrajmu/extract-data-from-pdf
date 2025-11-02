@@ -4,16 +4,17 @@ GPU check utilities for Streamlit UI.
 """
 
 import subprocess
+from typing import Any
 
 
-def check_nvidia_driver() -> tuple[bool, dict]:
+def check_nvidia_driver() -> tuple[bool, dict[str, Any]]:
     """
     Check NVIDIA driver availability.
 
     Returns:
         Tuple of (is_available: bool, info: dict)
     """
-    info = {
+    info: dict[str, Any] = {
         "available": False,
         "driver_version": None,
         "gpu_name": None,
@@ -96,14 +97,14 @@ def check_nvidia_driver() -> tuple[bool, dict]:
     return info["available"], info
 
 
-def check_pytorch_cuda() -> tuple[bool, dict]:
+def check_pytorch_cuda() -> tuple[bool, dict[str, Any]]:
     """
     Check PyTorch CUDA support.
 
     Returns:
         Tuple of (is_available: bool, info: dict)
     """
-    info = {
+    info: dict[str, Any] = {
         "available": False,
         "pytorch_version": None,
         "cuda_available": False,
@@ -149,14 +150,14 @@ def check_pytorch_cuda() -> tuple[bool, dict]:
     return info["cuda_available"], info
 
 
-def check_gpu_comprehensive() -> dict:
+def check_gpu_comprehensive() -> dict[str, Any]:
     """
     Perform comprehensive GPU check.
 
     Returns:
         Dictionary with all GPU information
     """
-    result = {
+    result: dict[str, Any] = {
         "nvidia_driver": {},
         "pytorch_cuda": {},
         "overall_status": "unknown",

@@ -52,6 +52,7 @@ module = [
     "pdf2image.*",
     "google.generativeai.*",
     "chandra_ocr.*",
+    "requests.*",
 ]
 ignore_missing_imports = true
 

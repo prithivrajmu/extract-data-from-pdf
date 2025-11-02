@@ -113,7 +113,7 @@ def parse_table_rows(text: str) -> list[dict[str, str]]:
     """
     lines = text.split("\n")
     rows = []
-    current_row = {}
+    current_row: dict[str, str] = {}
 
     i = 0
     while i < len(lines):

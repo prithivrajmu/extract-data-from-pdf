@@ -7,6 +7,7 @@ Forces CPU mode explicitly to avoid CUDA errors.
 import argparse
 import os
 import re
+from typing import Any
 
 import pandas as pd
 
@@ -144,7 +145,7 @@ def extract_text_from_pdf_cpu(pdf_path: str) -> tuple:
 
         # Process each page
         all_text_parts = []
-        structured_data = {"pages": []}
+        structured_data: dict[str, Any] = {"pages": []}
 
         for i, image in enumerate(images):
             print(f"\n📄 Processing page {i+1}/{len(images)}...")

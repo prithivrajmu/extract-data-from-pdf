@@ -113,8 +113,8 @@ def check_model_files():
         if incomplete_files:
             print(f"⚠️  Active downloads detected: {len(incomplete_files)}")
             for inc_file in incomplete_files:
-                size = inc_file.stat().st_size / (1024**3)  # GB
-                print(f"   • {inc_file.name[:20]}... ({size:.2f} GB)")
+                size_gb = inc_file.stat().st_size / (1024**3)  # GB
+                print(f"   • {inc_file.name[:20]}... ({size_gb:.2f} GB)")
 
     # Check running processes
     print()

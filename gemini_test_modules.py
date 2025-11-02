@@ -7,13 +7,14 @@ Test files should be placed in the test_file/ directory.
 """
 
 import os
+from typing import Any
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
-def test_gemini_basic(api_key: str) -> tuple[bool, dict]:
+def test_gemini_basic(api_key: str) -> tuple[bool, dict[str, Any]]:
     """
     Test Gemini 2.5 Flash basic functionality.
     Based on test_gemini_2.5_flash.py
@@ -21,7 +22,7 @@ def test_gemini_basic(api_key: str) -> tuple[bool, dict]:
     Returns:
         Tuple of (success: bool, results: dict)
     """
-    results = {"success": False, "tests": [], "errors": []}
+    results: dict[str, Any] = {"success": False, "tests": [], "errors": []}
 
     try:
         import google.generativeai as genai
@@ -143,7 +144,7 @@ def test_gemini_basic(api_key: str) -> tuple[bool, dict]:
 
 def test_gemini_file_upload(
     api_key: str, test_pdf_path: str | None = None
-) -> tuple[bool, dict]:
+) -> tuple[bool, dict[str, Any]]:
     """
     Test Gemini with file upload.
     Based on test_gemini_file_upload.py
@@ -155,7 +156,7 @@ def test_gemini_file_upload(
     Returns:
         Tuple of (success: bool, results: dict)
     """
-    results = {"success": False, "tests": [], "errors": [], "model_used": None}
+    results: dict[str, Any] = {"success": False, "tests": [], "errors": [], "model_used": None}
 
     try:
         import google.generativeai as genai
@@ -333,7 +334,7 @@ def test_gemini_file_upload(
 
 def test_gemini_json_upload(
     api_key: str, test_pdf_path: str | None = None
-) -> tuple[bool, dict]:
+) -> tuple[bool, dict[str, Any]]:
     """
     Test Gemini with file upload + JSON output.
     Based on test_gemini_json_upload.py
@@ -345,7 +346,7 @@ def test_gemini_json_upload(
     Returns:
         Tuple of (success: bool, results: dict)
     """
-    results = {"success": False, "tests": [], "errors": [], "model_used": None}
+    results: dict[str, Any] = {"success": False, "tests": [], "errors": [], "model_used": None}
 
     try:
         import google.generativeai as genai

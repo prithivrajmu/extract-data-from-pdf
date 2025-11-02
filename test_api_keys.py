@@ -230,6 +230,6 @@ def test_all_api_keys(keys: dict[str, str]) -> dict[str, tuple[bool, str]]:
             else:
                 results[provider] = (False, f"❌ Unknown provider: {provider}")
         else:
-            results[provider] = (None, "No API key provided")
+            results[provider] = (False, "No API key provided")
 
     return results

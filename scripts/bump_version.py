@@ -50,7 +50,7 @@ def update_extraction_service(new_version: str) -> None:
     print(f"✅ Updated extraction_service.py to version {new_version}")
 
 
-def update_changelog(new_version: str, release_date: str = None) -> None:
+def update_changelog(new_version: str, release_date: str | None = None) -> None:
     """Add new version section to CHANGELOG.md."""
     if release_date is None:
         release_date = date.today().isoformat()

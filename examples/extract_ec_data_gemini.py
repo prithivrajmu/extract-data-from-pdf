@@ -966,7 +966,7 @@ def process_batch(
     Returns:
         Dictionary mapping filename to list of extracted rows
     """
-    all_results = {}
+    all_results: dict[str, list[dict[str, str]]] = {}
     total_files = len(pdf_files)
     successful = 0
     failed = 0

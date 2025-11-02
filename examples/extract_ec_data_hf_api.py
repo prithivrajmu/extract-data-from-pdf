@@ -15,6 +15,7 @@ import os
 import re
 import time
 from io import BytesIO
+from typing import Any
 
 import pandas as pd
 import requests
@@ -208,7 +209,7 @@ def extract_text_from_pdf_hf_api(pdf_path: str, api_key: str) -> tuple:
 
         # Process each page
         all_text_parts = []
-        structured_data = {"pages": []}
+        structured_data: dict[str, Any] = {"pages": []}
 
         for i, image in enumerate(images):
             print(f"📄 Processing page {i+1}/{len(images)}...")

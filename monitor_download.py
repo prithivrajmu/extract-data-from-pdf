@@ -30,7 +30,7 @@ def monitor_download():
         print("❌ Cache directory not found")
         return
 
-    last_size = {}
+    last_size: dict[str, int] = {}
 
     try:
         while True:

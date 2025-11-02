@@ -389,7 +389,7 @@ def extract_names_fuzzy(row_text: str, row_lines: list[str]) -> tuple[str, str]:
 
     # Use fuzzy matching to merge similar names
     if FUZZY_AVAILABLE and len(unique_names) > 1:
-        merged_names = []
+        merged_names: list[str] = []
         for name in unique_names:
             is_duplicate = False
             for existing in merged_names:
@@ -529,7 +529,9 @@ def parse_table_rows(text: str) -> list[dict[str, str]]:
 
                     # Also stop if we see a pattern like "X" where X is next serial
                     if re.match(r"^\s*\d+\s+", next_line):
-                        next_serial = re.match(r"^\s*(\d+)\s+", next_line).group(1)
+                        serial_match = re.match(r"^\s*(\d+)\s+", next_line)
+                        if serial_match:
+                            next_serial = serial_match.group(1)
                         if (
                             next_serial.isdigit()
                             and int(next_serial) == int(serial_no) + 1

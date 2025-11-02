@@ -75,10 +75,10 @@ class ChandraOutputFormatter:
 
         # Show percentage progress
         if "%" in line:
-            percent_match = re.search(r"(\d+)%")
+            percent_match = re.search(r"(\d+)%", line)
             if percent_match:
-                percent = percent_match.group(1)
-                return f"⏳ Progress: {percent}%"
+                percent_value: str = percent_match.group(1)
+                return f"⏳ Progress: {percent_value}%"
 
         # Show download progress
         if "downloading" in line.lower() or "download" in line.lower():
