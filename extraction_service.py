@@ -8,6 +8,11 @@ import tempfile
 from typing import List, Dict, Optional, Callable
 from pathlib import Path
 
+from logging_config import get_logger
+
+
+logger = get_logger(__name__)
+
 
 def extract_with_local_model(pdf_path: str, model_name: str = 'datalab-to/chandra', use_cpu: bool = False, use_pretty: bool = False) -> List[Dict[str, str]]:
     """
@@ -284,7 +289,7 @@ def extract_data(
                     custom_fields = detected_fields_list
                 detected_fields = detected_fields_list
         except Exception as e:
-            print(f"⚠️  Field detection failed: {e}. Proceeding with default fields.")
+            logger.warning("Field detection failed: %s. Proceeding with default fields.", e)
     
     # Use pre-detected fields if provided (and no custom_fields specified)
     if detected_fields and not custom_fields and method in ['gemini', 'deepseek']:
@@ -382,7 +387,7 @@ def process_multiple_files(
             if progress_callback and detected_fields:
                 progress_callback(0, len(pdf_files), f"Detected {len(detected_fields)} fields: {', '.join(detected_fields[:5])}...")
         except Exception as e:
-            print(f"⚠️  Field detection failed: {e}. Proceeding with default fields.")
+            logger.warning("Field detection failed: %s. Proceeding with default fields.", e)
     
     results = {}
     

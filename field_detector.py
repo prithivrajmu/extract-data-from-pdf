@@ -11,6 +11,11 @@ import time
 from typing import List, Dict, Optional, Tuple, Set
 from pathlib import Path
 
+from logging_config import get_logger
+
+
+logger = get_logger(__name__)
+
 
 def create_field_detection_prompt() -> str:
     """
@@ -91,7 +96,7 @@ def parse_json_response(response_text: str) -> List[str]:
         return [f.strip() for f in fields if f.strip()]
     
     # If all strategies fail, return empty list
-    print(f"⚠️  Could not parse field detection response. Preview: {text[:200]}...")
+    logger.warning("Could not parse field detection response. Preview: %s...", text[:200])
     return []
 
 
@@ -143,7 +148,12 @@ def _detect_fields_with_gemini(pdf_path: str, api_key: str, prompt: str, max_ret
             except Exception as e:
                 if retry < max_retries - 1:
                     wait_time = (retry + 1) * 5
-                    print(f"   ⚠️  Upload failed (attempt {retry + 1}/{max_retries}): {e}")
+                    logger.warning(
+                        "Gemini upload failed (attempt %s/%s): %s",
+                        retry + 1,
+                        max_retries,
+                        e,
+                    )
                     time.sleep(wait_time)
                 else:
                     raise Exception(f"Failed to upload PDF after {max_retries} attempts: {e}")
@@ -175,13 +185,18 @@ def _detect_fields_with_gemini(pdf_path: str, api_key: str, prompt: str, max_ret
                     }
                 )
                 break
-            except Exception as e:
-                if retry < max_retries - 1:
-                    wait_time = (retry + 1) * 5
-                    print(f"   ⚠️  Request failed (attempt {retry + 1}/{max_retries}): {e}")
-                    time.sleep(wait_time)
-                else:
-                    raise Exception(f"Failed to get response after {max_retries} attempts: {e}")
+                except Exception as e:
+                    if retry < max_retries - 1:
+                        wait_time = (retry + 1) * 5
+                        logger.warning(
+                            "Gemini request failed (attempt %s/%s): %s",
+                            retry + 1,
+                            max_retries,
+                            e,
+                        )
+                        time.sleep(wait_time)
+                    else:
+                        raise Exception(f"Failed to get response after {max_retries} attempts: {e}")
         
         if response is None:
             raise Exception("Failed to get response from Gemini API")
@@ -197,7 +212,7 @@ def _detect_fields_with_gemini(pdf_path: str, api_key: str, prompt: str, max_ret
             try:
                 genai.delete_file(pdf_file.name)
             except Exception as delete_error:
-                print(f"⚠️  Could not delete uploaded Gemini file: {delete_error}")
+                logger.warning("Could not delete uploaded Gemini file: %s", delete_error)
 
 
 def _detect_fields_with_deepseek(pdf_path: str, api_key: str, prompt: str, max_retries: int) -> List[str]:
@@ -264,13 +279,18 @@ def _detect_fields_with_deepseek(pdf_path: str, api_key: str, prompt: str, max_r
             else:
                 raise Exception("Invalid response from Deepseek API")
                 
-        except Exception as e:
-            if retry < max_retries - 1:
-                wait_time = (retry + 1) * 5
-                print(f"   ⚠️  Request failed (attempt {retry + 1}/{max_retries}): {e}")
-                time.sleep(wait_time)
-            else:
-                raise Exception(f"Failed to get response after {max_retries} attempts: {e}")
+                except Exception as e:
+                    if retry < max_retries - 1:
+                        wait_time = (retry + 1) * 5
+                        logger.warning(
+                            "Deepseek request failed (attempt %s/%s): %s",
+                            retry + 1,
+                            max_retries,
+                            e,
+                        )
+                        time.sleep(wait_time)
+                    else:
+                        raise Exception(f"Failed to get response after {max_retries} attempts: {e}")
     
     return []
 
@@ -538,7 +558,7 @@ def detect_fields_from_pdf(
         
         if not api_key:
             # Fallback to OCR if no API key
-            print("⚠️  No API key provided, falling back to OCR detection")
+            logger.warning("No API key provided, falling back to OCR detection")
             ocr_method = extraction_method or 'chandra'
             return detect_fields_with_ocr(pdf_path, ocr_method)
         
@@ -609,7 +629,7 @@ def detect_fields_batch(
                 per_file_fields[filename] = fields
                 all_fields.append(fields)
             except Exception as e:
-                print(f"⚠️  Error detecting fields from {filename}: {e}")
+                logger.error("Error detecting fields from %s: %s", filename, e)
                 per_file_fields[filename] = []
         
         # Merge all fields

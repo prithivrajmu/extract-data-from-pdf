@@ -11,6 +11,11 @@ from typing import List, Dict, Set, Tuple, Optional
 from pathlib import Path
 from datetime import datetime
 
+from logging_config import get_logger
+
+
+logger = get_logger(__name__)
+
 
 def filter_fields(data: List[Dict], selected_fields: Set[str]) -> List[Dict]:
     """
@@ -243,7 +248,7 @@ def save_results_to_file(df: pd.DataFrame, output_path: str, format: str = 'csv'
         
         return True
     except Exception as e:
-        print(f"Error saving file: {e}")
+        logger.exception("Error saving file to %s", output_path)
         return False
 
 
@@ -281,7 +286,7 @@ def save_dataframe_to_markdown(df: pd.DataFrame, output_path: str) -> bool:
         
         return True
     except Exception as e:
-        print(f"Error saving markdown file: {e}")
+        logger.exception("Error saving markdown file to %s", output_path)
         return False
 
 
