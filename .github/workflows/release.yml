@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Tag version: $VERSION"
+
+      - name: Verify version matches pyproject.toml
+        run: |
+          EXPECTED_VERSION="${{ steps.version.outputs.version }}"
+          ACTUAL_VERSION=$(python -c "import re; content=open('pyproject.toml').read(); match=re.search(r'^version = \"([^\"]+)\"', content, re.MULTILINE); print(match.group(1) if match else 'NOT_FOUND')")
+          if [ "$EXPECTED_VERSION" != "$ACTUAL_VERSION" ]; then
+            echo "❌ Version mismatch! Tag: $EXPECTED_VERSION, pyproject.toml: $ACTUAL_VERSION"
+            exit 1
+          fi
+          echo "✅ Version match: $EXPECTED_VERSION"
+
+      - name: Build package
+        run: python -m build
+
+      - name: Generate Release Notes from CHANGELOG
+        id: release_notes
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Extract changelog section for this version
+          python3 << 'EOF'
+          import re
+          import sys
+          
+          with open('CHANGELOG.md', 'r') as f:
+              content = f.read()
+          
+          # Find the section for this version
+          version = "${{ steps.version.outputs.version }}"
+          pattern = rf'## \[{re.escape(version)}\] - [^\n]+\n\n((?:### [^\n]+\n\n(?:- [^\n]+\n)+)+)'
+          match = re.search(pattern, content)
+          
+          if match:
+              notes = f"# Release {version}\n\n{match.group(1)}"
+              with open('RELEASE_NOTES.md', 'w') as f:
+                  f.write(notes)
+              print(f"✅ Generated release notes for {version}")
+              sys.exit(0)
+          else:
+              print(f"⚠️  Could not find changelog entry for {version}")
+              with open('RELEASE_NOTES.md', 'w') as f:
+                  f.write(f"# Release {version}\n\nSee CHANGELOG.md for details.")
+              sys.exit(0)
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.version.outputs.version }}
+          body_path: RELEASE_NOTES.md
+          files: dist/*
+          draft: false
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+

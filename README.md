@@ -5,6 +5,8 @@
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Tests](https://img.shields.io/badge/tests-pytest%20%E2%9C%94%EF%B8%8F-6A5ACD.svg)](DEVELOPMENT.md#-testing)
+[![codecov](https://codecov.io/gh/prithivrajmu/extract_tn_ec/branch/main/graph/badge.svg)](https://codecov.io/gh/prithivrajmu/extract_tn_ec)
+[![Release](https://img.shields.io/github/v/release/prithivrajmu/extract_tn_ec)](https://github.com/prithivrajmu/extract_tn_ec/releases)
 
 Extract structured data from PDF documents using multiple OCR and AI methods. Available as both a **Streamlit web application** and command-line scripts.
 
@@ -360,6 +362,8 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for det
 
 - `API.md` - Complete API documentation for all core modules
 - `DEVELOPMENT.md` - Development setup, code quality tools, and workflows
+- `RELEASE.md` - Release process and version management guide
+- `CHANGELOG.md` - Release history and changes
 - `GPU_SETUP.md` - GPU configuration guide
 - `MODEL_LOADING_ISSUES.md` - Troubleshooting model loading
 - `TROUBLESHOOTING.md` - General troubleshooting guide

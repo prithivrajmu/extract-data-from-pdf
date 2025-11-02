@@ -115,6 +115,13 @@ tmp/
 .pytest_cache/
 .coverage
 htmlcov/
+coverage.xml
+
+# Release artifacts
+RELEASE_NOTES.md
+dist/
+build/
+*.egg-info/
 
 # mypy
 .mypy_cache/
