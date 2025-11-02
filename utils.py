@@ -3,6 +3,7 @@
 Helper utilities for file handling, field filtering, and data formatting.
 """
 
+import io
 import os
 import json
 import pandas as pd
@@ -128,12 +129,50 @@ def validate_pdf_file(file) -> Tuple[bool, str]:
     if not file.name.lower().endswith('.pdf'):
         return False, f"File '{file.name}' is not a PDF file"
     
+    # Read file bytes safely
+    try:
+        file_bytes = file.getvalue()
+    except Exception as error:
+        return False, f"Unable to read uploaded file: {error}"
+
     # Check file size (max 50 MB)
     max_size_mb = 50
-    file_size_mb = len(file.getvalue()) / (1024 * 1024)
+    file_size_mb = len(file_bytes) / (1024 * 1024)
     
     if file_size_mb > max_size_mb:
         return False, f"File '{file.name}' is too large ({file_size_mb:.2f} MB). Maximum size is {max_size_mb} MB."
+
+    # Basic PDF signature validation
+    if len(file_bytes) < 4 or not file_bytes.startswith(b"%PDF"):
+        return False, f"File '{file.name}' does not appear to be a valid PDF (missing %PDF header)."
+
+    # Check for EOF marker within last 2KB
+    if b"%%EOF" not in file_bytes[-2048:]:
+        return False, f"File '{file.name}' appears to be incomplete (missing %%EOF marker)."
+
+    # Attempt to parse PDF structure when PyPDF2 is available
+    try:
+        from PyPDF2 import PdfReader
+        from PyPDF2.errors import PdfReadError
+
+        pdf_buffer = io.BytesIO(file_bytes)
+        reader = PdfReader(pdf_buffer)
+
+        if len(reader.pages) == 0:
+            return False, f"File '{file.name}' does not contain any pages."
+    except ImportError:
+        # PyPDF2 not installed; skip structural validation
+        pass
+    except PdfReadError as parse_error:
+        return False, f"File '{file.name}' is not a valid PDF: {parse_error}"
+    except Exception as parse_error:
+        return False, f"Unable to open '{file.name}' as PDF: {parse_error}"
+    finally:
+        # Reset file pointer if possible for downstream consumers
+        try:
+            file.seek(0)
+        except (AttributeError, OSError):
+            pass
     
     return True, ""
 
