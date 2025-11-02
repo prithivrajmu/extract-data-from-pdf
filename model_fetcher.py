@@ -11,7 +11,7 @@ from pathlib import Path
 import requests
 
 # Cache file location
-CACHE_DIR = Path.home() / ".cache" / "extract_tn_ec"
+CACHE_DIR = Path.home() / ".cache" / "extract-data-from-pdf"
 CACHE_FILE = CACHE_DIR / "model_cache.json"
 CACHE_DURATION = timedelta(hours=24)  # Cache for 24 hours
 

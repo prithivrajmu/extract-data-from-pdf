@@ -99,7 +99,7 @@ def update_changelog(new_version: str, release_date: str | None = None) -> None:
     # Update version links at bottom
     if f"[{new_version}]:" not in content:
         # Add new version link
-        repo_url = "https://github.com/prithivrajmu/extract_tn_ec"
+        repo_url = "https://github.com/prithivrajmu/extract-data-from-pdf"
         version_link = f"[{new_version}]: {repo_url}/releases/tag/v{new_version}\n"
 
         # Insert before [Unreleased] link

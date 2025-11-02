@@ -52,7 +52,7 @@ This document describes the process for creating new releases of this project.
 If you prefer to create the release manually:
 
 1. Follow steps 1-4 above
-2. Go to [GitHub Releases](https://github.com/prithivrajmu/extract_tn_ec/releases)
+2. Go to [GitHub Releases](https://github.com/prithivrajmu/extract-data-from-pdf/releases)
 3. Click "Draft a new release"
 4. Select the tag you just pushed
 5. Copy the relevant section from CHANGELOG.md into the release description
@@ -92,10 +92,10 @@ To enable Codecov coverage badges:
 
 3. **Verify Badge:**
    - The badge in README will automatically update once coverage data is uploaded
-   - Badge URL: `https://codecov.io/gh/prithivrajmu/extract_tn_ec`
+   - Badge URL: `https://codecov.io/gh/prithivrajmu/extract-data-from-pdf`
 
 4. **View Coverage:**
-   - Go to [codecov.io/gh/prithivrajmu/extract_tn_ec](https://codecov.io/gh/prithivrajmu/extract_tn_ec)
+   - Go to [codecov.io/gh/prithivrajmu/extract-data-from-pdf](https://codecov.io/gh/prithivrajmu/extract-data-from-pdf)
    - Coverage reports are uploaded after each CI run
 
 ## Post-Release

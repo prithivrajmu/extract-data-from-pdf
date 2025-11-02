@@ -35,7 +35,7 @@ git push origin v1.0.0
 
 ### 4. Verify Release Created
 
-1. Go to: https://github.com/prithivrajmu/extract_tn_ec/releases
+1. Go to: https://github.com/prithivrajmu/extract-data-from-pdf/releases
 2. You should see "Release 1.0.0" created automatically by GitHub Actions
 3. The release notes will be populated from CHANGELOG.md
 
@@ -68,7 +68,7 @@ To enable the Codecov badge:
 
 1. Visit: https://codecov.io
 2. Sign in with GitHub
-3. Add repository: `prithivrajmu/extract_tn_ec`
+3. Add repository: `prithivrajmu/extract-data-from-pdf`
 4. Wait for next CI run - badge will update automatically
 
 **Note:** For public repositories, no token is needed. The badge will work with `GITHUB_TOKEN` automatically.

@@ -1,5 +1,5 @@
 [project]
-name = "extract-tn-ec"
+name = "extract-data-from-pdf"
 version = "1.1.0"
 description = "Extract structured data from PDF documents using OCR and AI backends."
 readme = "README.md"

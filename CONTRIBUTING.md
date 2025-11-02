@@ -262,8 +262,8 @@ docs: Update README with new API key instructions
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/extract_tn_ec.git
-   cd extract_tn_ec
+   git clone https://github.com/yourusername/extract-data-from-pdf.git
+   cd extract-data-from-pdf
    ```
 
 2. **Set up virtual environment**:

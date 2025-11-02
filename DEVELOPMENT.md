@@ -15,7 +15,7 @@ This guide covers development setup, code quality tools, and contribution workfl
 1. **Clone the repository:**
    ```bash
    git clone <repository-url>
-   cd extract_tn_ec
+   cd extract-data-from-pdf
    ```
 
 2. **Create virtual environment:**
@@ -163,7 +163,7 @@ pre-commit run
 ## 🏗️ Project Structure
 
 ```
-extract_tn_ec/
+extract-data-from-pdf/
 ├── streamlit_app.py          # Main Streamlit application
 ├── extraction_service.py     # Core extraction logic
 ├── utils.py                  # Utility functions

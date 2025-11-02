@@ -1,12 +1,12 @@
 # PDF Data Extraction
 
-[![CI](https://github.com/prithivrajmu/extract_tn_ec/actions/workflows/ci.yml/badge.svg)](https://github.com/prithivrajmu/extract_tn_ec/actions/workflows/ci.yml)
+[![CI](https://github.com/prithivrajmu/extract-data-from-pdf/actions/workflows/ci.yml/badge.svg)](https://github.com/prithivrajmu/extract-data-from-pdf/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Tests](https://img.shields.io/badge/tests-pytest%20%E2%9C%94%EF%B8%8F-6A5ACD.svg)](DEVELOPMENT.md#-testing)
-[![codecov](https://codecov.io/gh/prithivrajmu/extract_tn_ec/branch/main/graph/badge.svg)](https://codecov.io/gh/prithivrajmu/extract_tn_ec)
-[![Release](https://img.shields.io/github/v/release/prithivrajmu/extract_tn_ec)](https://github.com/prithivrajmu/extract_tn_ec/releases)
+[![codecov](https://codecov.io/gh/prithivrajmu/extract-data-from-pdf/branch/main/graph/badge.svg)](https://codecov.io/gh/prithivrajmu/extract-data-from-pdf)
+[![Release](https://img.shields.io/github/v/release/prithivrajmu/extract-data-from-pdf)](https://github.com/prithivrajmu/extract-data-from-pdf/releases)
 
 Extract structured data from PDF documents using multiple OCR and AI methods. Available as both a **Streamlit web application** and command-line scripts.
 
@@ -23,7 +23,7 @@ The easiest way to use this tool is through the Streamlit web interface.
 
 1. **Clone or navigate to the project directory:**
    ```bash
-   cd extract_tn_ec
+   cd extract-data-from-pdf
    ```
 
 2. **Set up virtual environment (using uv - recommended):**
