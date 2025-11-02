@@ -37,6 +37,9 @@ from logging_config import get_logger
 logger = get_logger(__name__)
 
 
+__version__ = "1.0.0"
+
+
 def extract_with_local_model(pdf_path: str, model_name: str = 'datalab-to/chandra', use_cpu: bool = False, use_pretty: bool = False) -> List[Dict[str, str]]:
     """
     Extract data using local OCR model.

@@ -1,3 +1,12 @@
+[project]
+name = "extract-tn-ec"
+version = "1.0.0"
+description = "Extract structured data from PDF documents using OCR and AI backends."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Prithiv Raj" }]
+requires-python = ">=3.8"
+
 [tool.black]
 line-length = 88
 target-version = ['py38', 'py39', 'py310', 'py311']
