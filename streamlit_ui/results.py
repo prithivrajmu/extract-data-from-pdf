@@ -26,9 +26,13 @@ def render_results_section(output_formats: Iterable[str]) -> None:
     st.markdown("---")
     st.markdown("### 📊 Extraction Results")
 
-    filtered_results = filter_fields(results, st.session_state.get("selected_fields", set()))
+    filtered_results = filter_fields(
+        results, st.session_state.get("selected_fields", set())
+    )
     if not filtered_results:
-        st.warning("⚠️ No data extracted. Please check your PDF files and extraction method.")
+        st.warning(
+            "⚠️ No data extracted. Please check your PDF files and extraction method."
+        )
         return
 
     df = pd.DataFrame(filtered_results)
@@ -38,11 +42,17 @@ def render_results_section(output_formats: Iterable[str]) -> None:
     with col1:
         st.metric("Total Rows", len(df))
     with col2:
-        st.metric("Files Processed", df["filename"].nunique() if "filename" in df.columns else 0)
+        st.metric(
+            "Files Processed",
+            df["filename"].nunique() if "filename" in df.columns else 0,
+        )
     with col3:
         st.metric("Fields Extracted", len(df.columns))
     with col4:
-        st.metric("Unique Plot Nos", df["Plot No."].nunique() if "Plot No." in df.columns else 0)
+        st.metric(
+            "Unique Plot Nos",
+            df["Plot No."].nunique() if "Plot No." in df.columns else 0,
+        )
 
     st.dataframe(df, use_container_width=True, height=400)
 
@@ -61,14 +71,18 @@ def render_results_section(output_formats: Iterable[str]) -> None:
 
     selected_formats = st.session_state.get("selected_output_formats", ["CSV"])
     if not selected_formats:
-        st.warning("⚠️ No output formats selected. Please select at least one format in the sidebar.")
+        st.warning(
+            "⚠️ No output formats selected. Please select at least one format in the sidebar."
+        )
         return
 
     cols_per_row = 2
     download_buttons = []
 
     for format_name in selected_formats:
-        file_format, mime_type, default_filename = format_map.get(format_name, (None, None, None))
+        file_format, mime_type, default_filename = format_map.get(
+            format_name, (None, None, None)
+        )
         if not file_format:
             continue
 
@@ -85,16 +99,22 @@ def render_results_section(output_formats: Iterable[str]) -> None:
             if json_format in {"structured", "unified"}:
                 metadata = {
                     "detected_fields": st.session_state.get("detected_fields"),
-                    "auto_detect_enabled": st.session_state.get("auto_detect_fields", False),
+                    "auto_detect_enabled": st.session_state.get(
+                        "auto_detect_fields", False
+                    ),
                 }
-            download_data = dataframe_to_json_string(df, format=json_format, metadata=metadata)
+            download_data = dataframe_to_json_string(
+                df, format=json_format, metadata=metadata
+            )
         elif file_format == "md":
             download_data = dataframe_to_markdown_string(df)
         else:
             download_data = None
 
         if download_data:
-            download_buttons.append((format_name, download_data, default_filename, mime_type))
+            download_buttons.append(
+                (format_name, download_data, default_filename, mime_type)
+            )
 
     if not download_buttons:
         st.warning("⚠️ No downloadable data generated.")
@@ -102,7 +122,9 @@ def render_results_section(output_formats: Iterable[str]) -> None:
 
     for i in range(0, len(download_buttons), cols_per_row):
         cols = st.columns(cols_per_row)
-        for j, (format_name, data, filename, mime) in enumerate(download_buttons[i : i + cols_per_row]):
+        for j, (format_name, data, filename, mime) in enumerate(
+            download_buttons[i : i + cols_per_row]
+        ):
             with cols[j]:
                 st.download_button(
                     label=f"📥 Download {format_name}",
@@ -148,4 +170,3 @@ def render_footer() -> None:
     """,
         unsafe_allow_html=True,
     )
-

@@ -15,9 +15,7 @@ class TestExtractData:
     @patch("extraction_service.extract_with_easyocr")
     def test_extract_data_easyocr(self, mock_extract):
         """Test extraction with EasyOCR method."""
-        mock_extract.return_value = [
-            {"filename": "test.pdf", "Plot No.": "123"}
-        ]
+        mock_extract.return_value = [{"filename": "test.pdf", "Plot No.": "123"}]
 
         result = extract_data(
             "test.pdf",
@@ -50,9 +48,7 @@ class TestExtractData:
     @patch("extraction_service.extract_with_local_model")
     def test_extract_data_local_with_options(self, mock_extract):
         """Test local model extraction with custom options."""
-        mock_extract.return_value = [
-            {"filename": "test.pdf", "Plot No.": "123"}
-        ]
+        mock_extract.return_value = [{"filename": "test.pdf", "Plot No.": "123"}]
 
         result = extract_data(
             "test.pdf",
@@ -136,4 +132,3 @@ class TestExtractDataMethodRouting:
             )
 
             mock_func.assert_called_once()
-

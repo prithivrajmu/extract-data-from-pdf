@@ -15,17 +15,19 @@ from pathlib import Path
 def setup_deepseek_client(api_key: str, base_url: str = "https://api.deepseek.com"):
     """
     Setup Deepseek API client.
-    
+
     Args:
         api_key: Deepseek API key
         base_url: API base URL (default: https://api.deepseek.com)
-    
+
     Returns:
         Tuple of (api_key, base_url) for use in API calls
     """
     if not api_key:
-        raise ValueError("Deepseek API key is required. Get one from https://platform.deepseek.com")
-    
+        raise ValueError(
+            "Deepseek API key is required. Get one from https://platform.deepseek.com"
+        )
+
     return api_key, base_url
 
 
@@ -33,7 +35,7 @@ def create_extraction_prompt() -> str:
     """
     Create the prompt for extracting EC data from PDF.
     Similar to Gemini prompt structure.
-    
+
     Returns:
         Prompt string for Deepseek AI
     """
@@ -69,7 +71,7 @@ Return ONLY the JSON array, nothing else."""
 def create_lenient_extraction_prompt() -> str:
     """
     Create a more lenient prompt for extracting EC data.
-    
+
     Returns:
         Lenient prompt string for Deepseek AI
     """
@@ -122,16 +124,16 @@ def parse_json_response(response_text: str) -> List[Dict]:
     """
     Robustly parse JSON response with multiple fallback strategies.
     Same as Gemini implementation.
-    
+
     Args:
         response_text: Raw response text from AI
-        
+
     Returns:
         Parsed JSON data as a list
     """
     # Clean up response text
     text = response_text.strip()
-    
+
     # Remove markdown code blocks if present
     if text.startswith("```json"):
         text = text[7:].strip()
@@ -139,55 +141,56 @@ def parse_json_response(response_text: str) -> List[Dict]:
         text = text[3:].strip()
     if text.endswith("```"):
         text = text[:-3].strip()
-    
+
     # Strategy 1: Try direct JSON parsing
     try:
         return json.loads(text)
     except json.JSONDecodeError:
         pass
-    
+
     # Strategy 2: Try to find JSON array in the text
     import re
-    json_match = re.search(r'\[[\s\S]*\]', text)
+
+    json_match = re.search(r"\[[\s\S]*\]", text)
     if json_match:
         try:
             return json.loads(json_match.group())
         except json.JSONDecodeError:
             pass
-    
+
     # Strategy 3: Try to find multiple JSON objects and combine them
-    json_objects = re.findall(r'\{[^{}]*\}', text, re.DOTALL)
+    json_objects = re.findall(r"\{[^{}]*\}", text, re.DOTALL)
     if json_objects:
         parsed_objects = []
         for obj_str in json_objects:
             try:
                 # Try to balance braces if needed
-                if obj_str.count('{') != obj_str.count('}'):
+                if obj_str.count("{") != obj_str.count("}"):
                     continue
                 parsed_objects.append(json.loads(obj_str))
             except json.JSONDecodeError:
                 continue
         if parsed_objects:
             return parsed_objects
-    
+
     # Strategy 4: Try to fix common JSON issues
-    fixed_text = text.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+    fixed_text = text.replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
     fixed_text = fixed_text.replace("'", '"')
     try:
         return json.loads(fixed_text)
     except json.JSONDecodeError:
         pass
-    
+
     # Strategy 5: Try to extract just the JSON array content
-    start_idx = text.find('[')
-    end_idx = text.rfind(']')
+    start_idx = text.find("[")
+    end_idx = text.rfind("]")
     if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
-        json_content = text[start_idx:end_idx + 1]
+        json_content = text[start_idx : end_idx + 1]
         try:
             return json.loads(json_content)
         except json.JSONDecodeError:
             pass
-    
+
     # If all strategies fail, return empty list
     return []
 
@@ -195,102 +198,108 @@ def parse_json_response(response_text: str) -> List[Dict]:
 def pdf_to_base64(pdf_path: str) -> str:
     """
     Convert PDF file to base64 string.
-    
+
     Args:
         pdf_path: Path to PDF file
-        
+
     Returns:
         Base64 encoded string of PDF
     """
-    with open(pdf_path, 'rb') as f:
+    with open(pdf_path, "rb") as f:
         pdf_bytes = f.read()
-        return base64.b64encode(pdf_bytes).decode('utf-8')
+        return base64.b64encode(pdf_bytes).decode("utf-8")
 
 
-def extract_data_from_pdf_deepseek(pdf_path: str, api_key: str, custom_fields: Optional[List[str]] = None, max_retries: int = 3) -> List[Dict[str, str]]:
+def extract_data_from_pdf_deepseek(
+    pdf_path: str,
+    api_key: str,
+    custom_fields: Optional[List[str]] = None,
+    max_retries: int = 3,
+) -> List[Dict[str, str]]:
     """
     Extract data from PDF using Deepseek API with retry logic.
-    
+
     Args:
         pdf_path: Path to the PDF file
         api_key: Deepseek API key
         custom_fields: Optional list of custom field names to extract
         max_retries: Maximum number of retry attempts for API calls
-        
+
     Returns:
         List of dictionaries with extracted row data
     """
     import requests
-    
+
     filename = os.path.basename(pdf_path)
-    
+
     if not os.path.exists(pdf_path):
         raise FileNotFoundError(f"PDF file not found: {pdf_path}")
-    
+
     # Setup client
     api_key, base_url = setup_deepseek_client(api_key)
-    
+
     # Convert PDF to base64
     try:
         pdf_base64 = pdf_to_base64(pdf_path)
     except Exception as e:
         raise Exception(f"Failed to read PDF file: {e}")
-    
+
     # Prepare the prompt with custom fields if provided
     if custom_fields:
-        from prompt_utils import create_custom_extraction_prompt, create_lenient_custom_prompt
+        from prompt_utils import (
+            create_custom_extraction_prompt,
+            create_lenient_custom_prompt,
+        )
+
         prompt = create_custom_extraction_prompt(custom_fields)
         lenient_prompt_func = lambda: create_lenient_custom_prompt(custom_fields)
     else:
         prompt = create_extraction_prompt()
         lenient_prompt_func = create_lenient_extraction_prompt
-    
+
     # Prepare API request
     api_endpoint = f"{base_url}/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+
     # Deepseek supports vision, so we'll use the chat completions endpoint with images
     # Since PDFs need to be converted, we'll convert PDF pages to images first
     try:
         from pdf2image import convert_from_path
         from PIL import Image
         import io
-        
+
         # Convert PDF to images
         images = convert_from_path(pdf_path, dpi=200)
-        
+
         # Convert first page (or all pages) to base64
         image_parts = []
         for i, image in enumerate(images[:10]):  # Limit to first 10 pages
             buffered = io.BytesIO()
             image.save(buffered, format="PNG")
-            img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
-            image_parts.append({
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:image/png;base64,{img_base64}"
+            img_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+            image_parts.append(
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/png;base64,{img_base64}"},
                 }
-            })
-        
+            )
+
         # Create messages with images
         messages = [
             {
                 "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt}
-                ] + image_parts
+                "content": [{"type": "text", "text": prompt}] + image_parts,
             }
         ]
-        
+
     except ImportError:
         # Fallback: use text-only if pdf2image not available
-        raise Exception("pdf2image library required for Deepseek PDF processing. Install with: pip install pdf2image")
+        raise Exception(
+            "pdf2image library required for Deepseek PDF processing. Install with: pip install pdf2image"
+        )
     except Exception as e:
         raise Exception(f"Failed to process PDF images: {e}")
-    
+
     # Make API request with retry logic
     response = None
     for retry in range(max_retries):
@@ -299,19 +308,18 @@ def extract_data_from_pdf_deepseek(pdf_path: str, api_key: str, custom_fields: O
                 "model": "deepseek-chat",  # Deepseek chat model
                 "messages": messages,
                 "temperature": 0.1,
-                "response_format": {"type": "json_object"} if "json" in prompt.lower() else None
+                "response_format": (
+                    {"type": "json_object"} if "json" in prompt.lower() else None
+                ),
             }
-            
+
             # Remove None values
             payload = {k: v for k, v in payload.items() if v is not None}
-            
+
             response = requests.post(
-                api_endpoint,
-                headers=headers,
-                json=payload,
-                timeout=120
+                api_endpoint, headers=headers, json=payload, timeout=120
             )
-            
+
             # Check for rate limiting
             if response.status_code == 429:
                 if retry < max_retries - 1:
@@ -320,136 +328,162 @@ def extract_data_from_pdf_deepseek(pdf_path: str, api_key: str, custom_fields: O
                     continue
                 else:
                     raise Exception("Rate limit exceeded. Please try again later.")
-            
+
             response.raise_for_status()
             break
-            
+
         except requests.exceptions.RequestException as e:
             if retry == max_retries - 1:
-                raise Exception(f"Failed to call Deepseek API after {max_retries} attempts: {e}")
+                raise Exception(
+                    f"Failed to call Deepseek API after {max_retries} attempts: {e}"
+                )
             wait_time = (retry + 1) * 5
             time.sleep(wait_time)
-    
+
     if response is None:
         raise Exception("Failed to get response from Deepseek API")
-    
+
     # Parse response
     try:
         response_data = response.json()
-        response_text = response_data['choices'][0]['message']['content'].strip()
+        response_text = response_data["choices"][0]["message"]["content"].strip()
     except (KeyError, IndexError, json.JSONDecodeError) as e:
         raise Exception(f"Failed to parse Deepseek API response: {e}")
-    
+
     # Parse JSON from response
     extracted_data = parse_json_response(response_text)
-    
+
     # Validate data format
     if not isinstance(extracted_data, list):
         if isinstance(extracted_data, dict):
             extracted_data = [extracted_data]
         else:
             extracted_data = []
-    
+
     # Format rows - dynamically handle fields
     formatted_rows = []
     for row in extracted_data:
         if not isinstance(row, dict):
             continue
-        
-        formatted_row = {'filename': filename}
-        
+
+        formatted_row = {"filename": filename}
+
         if custom_fields:
             # Use custom fields
             for field in custom_fields:
-                formatted_row[field] = str(row.get(field, '')).strip()
+                formatted_row[field] = str(row.get(field, "")).strip()
         else:
             # Use default fields
-            formatted_row.update({
-                'Sr.No': str(row.get('Sr.No', '')).strip(),
-                'Document No.& Year': str(row.get('Document No.& Year', '')).strip(),
-                'Name of Executant(s)': str(row.get('Name of Executant(s)', '')).strip(),
-                'Name of Claimant(s)': str(row.get('Name of Claimant(s)', '')).strip(),
-                'Survey No.': str(row.get('Survey No.', row.get('Survey No./', ''))).strip(),
-                'Plot No.': str(row.get('Plot No.', row.get('Plot No./', ''))).strip(),
-            })
-        
+            formatted_row.update(
+                {
+                    "Sr.No": str(row.get("Sr.No", "")).strip(),
+                    "Document No.& Year": str(
+                        row.get("Document No.& Year", "")
+                    ).strip(),
+                    "Name of Executant(s)": str(
+                        row.get("Name of Executant(s)", "")
+                    ).strip(),
+                    "Name of Claimant(s)": str(
+                        row.get("Name of Claimant(s)", "")
+                    ).strip(),
+                    "Survey No.": str(
+                        row.get("Survey No.", row.get("Survey No./", ""))
+                    ).strip(),
+                    "Plot No.": str(
+                        row.get("Plot No.", row.get("Plot No./", ""))
+                    ).strip(),
+                }
+            )
+
         # Only include rows with at least one non-empty field (besides filename)
-        non_empty_fields = [v for k, v in formatted_row.items() if k != 'filename' and v.strip()]
+        non_empty_fields = [
+            v for k, v in formatted_row.items() if k != "filename" and v.strip()
+        ]
         if non_empty_fields:
             formatted_rows.append(formatted_row)
-    
+
     # If no rows found, try with lenient prompt
     if len(formatted_rows) == 0:
         if custom_fields:
             lenient_prompt = lenient_prompt_func()
         else:
             lenient_prompt = create_lenient_extraction_prompt()
-        
+
         messages_lenient = [
             {
                 "role": "user",
-                "content": [
-                    {"type": "text", "text": lenient_prompt}
-                ] + image_parts
+                "content": [{"type": "text", "text": lenient_prompt}] + image_parts,
             }
         ]
-        
+
         try:
             payload_lenient = {
                 "model": "deepseek-chat",
                 "messages": messages_lenient,
                 "temperature": 0.2,
             }
-            
+
             response_lenient = requests.post(
-                api_endpoint,
-                headers=headers,
-                json=payload_lenient,
-                timeout=120
+                api_endpoint, headers=headers, json=payload_lenient, timeout=120
             )
             response_lenient.raise_for_status()
-            
+
             response_data_lenient = response_lenient.json()
-            response_text_lenient = response_data_lenient['choices'][0]['message']['content'].strip()
-            
+            response_text_lenient = response_data_lenient["choices"][0]["message"][
+                "content"
+            ].strip()
+
             lenient_extracted_data = parse_json_response(response_text_lenient)
-            
+
             if not isinstance(lenient_extracted_data, list):
                 if isinstance(lenient_extracted_data, dict):
                     lenient_extracted_data = [lenient_extracted_data]
                 else:
                     lenient_extracted_data = []
-            
+
             lenient_rows = []
             for row in lenient_extracted_data:
                 if not isinstance(row, dict):
                     continue
-                
-                formatted_row = {'filename': filename}
-                
+
+                formatted_row = {"filename": filename}
+
                 if custom_fields:
                     for field in custom_fields:
-                        formatted_row[field] = str(row.get(field, '')).strip()
+                        formatted_row[field] = str(row.get(field, "")).strip()
                 else:
-                    formatted_row.update({
-                        'Sr.No': str(row.get('Sr.No', '')).strip(),
-                        'Document No.& Year': str(row.get('Document No.& Year', '')).strip(),
-                        'Name of Executant(s)': str(row.get('Name of Executant(s)', '')).strip(),
-                        'Name of Claimant(s)': str(row.get('Name of Claimant(s)', '')).strip(),
-                        'Survey No.': str(row.get('Survey No.', row.get('Survey No./', ''))).strip(),
-                        'Plot No.': str(row.get('Plot No.', row.get('Plot No./', ''))).strip(),
-                    })
-                
+                    formatted_row.update(
+                        {
+                            "Sr.No": str(row.get("Sr.No", "")).strip(),
+                            "Document No.& Year": str(
+                                row.get("Document No.& Year", "")
+                            ).strip(),
+                            "Name of Executant(s)": str(
+                                row.get("Name of Executant(s)", "")
+                            ).strip(),
+                            "Name of Claimant(s)": str(
+                                row.get("Name of Claimant(s)", "")
+                            ).strip(),
+                            "Survey No.": str(
+                                row.get("Survey No.", row.get("Survey No./", ""))
+                            ).strip(),
+                            "Plot No.": str(
+                                row.get("Plot No.", row.get("Plot No./", ""))
+                            ).strip(),
+                        }
+                    )
+
                 # Only include rows with at least one non-empty field
-                non_empty_fields = [v for k, v in formatted_row.items() if k != 'filename' and v.strip()]
+                non_empty_fields = [
+                    v for k, v in formatted_row.items() if k != "filename" and v.strip()
+                ]
                 if non_empty_fields:
                     lenient_rows.append(formatted_row)
-            
+
             if lenient_rows:
                 formatted_rows = lenient_rows
         except Exception as e:
             # If lenient extraction fails, continue with empty results
             pass
-    
-    return formatted_rows
 
+    return formatted_rows

@@ -6,41 +6,49 @@ Utility functions for generating extraction prompts with custom fields.
 from typing import List, Optional
 
 
-def create_custom_extraction_prompt(custom_fields: List[str], required_fields: Optional[List[str]] = None) -> str:
+def create_custom_extraction_prompt(
+    custom_fields: List[str], required_fields: Optional[List[str]] = None
+) -> str:
     """
     Create extraction prompt with custom fields.
-    
+
     Args:
         custom_fields: List of custom field names to extract
         required_fields: List of fields that must have values (default: ['Plot No.'])
-        
+
     Returns:
         Prompt string for AI extraction
     """
     if required_fields is None:
-        required_fields = ['Plot No.']
-    
+        required_fields = ["Plot No."]
+
     # Normalize field names
     normalized_fields = [f.strip() for f in custom_fields if f.strip()]
-    
+
     if not normalized_fields:
         normalized_fields = [
-            'Sr.No', 'Document No.& Year', 'Name of Executant(s)', 
-            'Name of Claimant(s)', 'Survey No.', 'Plot No.'
+            "Sr.No",
+            "Document No.& Year",
+            "Name of Executant(s)",
+            "Name of Claimant(s)",
+            "Survey No.",
+            "Plot No.",
         ]
-    
+
     # Build field list description
-    field_list = "\n".join([f"{i+1}. {field}" for i, field in enumerate(normalized_fields)])
-    
+    field_list = "\n".join(
+        [f"{i+1}. {field}" for i, field in enumerate(normalized_fields)]
+    )
+
     # Build required fields description
     required_list = ", ".join(required_fields)
-    
+
     # Build JSON structure example
     json_example = "{\n"
     for field in normalized_fields:
         json_example += f'    "{field}": "{field} value",\n'
-    json_example = json_example.rstrip(',\n') + "\n}"
-    
+    json_example = json_example.rstrip(",\n") + "\n}"
+
     prompt = f"""Extract data from this PDF document.
 
 TASK: Identify table columns and extract rows based on the specified fields.
@@ -68,35 +76,46 @@ Example:
 ]
 
 Return ONLY the JSON array, nothing else."""
-    
+
     return prompt
 
 
-def create_lenient_custom_prompt(custom_fields: List[str], required_fields: Optional[List[str]] = None) -> str:
+def create_lenient_custom_prompt(
+    custom_fields: List[str], required_fields: Optional[List[str]] = None
+) -> str:
     """
     Create lenient extraction prompt with custom fields (for retry attempts).
-    
+
     Args:
         custom_fields: List of custom field names to extract
         required_fields: List of fields that must have values
-        
+
     Returns:
         Lenient prompt string for AI extraction
     """
     if required_fields is None:
-        required_fields = ['Plot No.']
-    
+        required_fields = ["Plot No."]
+
     normalized_fields = [f.strip() for f in custom_fields if f.strip()]
-    
+
     if not normalized_fields:
         normalized_fields = [
-            'Sr.No', 'Document No.& Year', 'Name of Executant(s)', 
-            'Name of Claimant(s)', 'Survey No.', 'Plot No.'
+            "Sr.No",
+            "Document No.& Year",
+            "Name of Executant(s)",
+            "Name of Claimant(s)",
+            "Survey No.",
+            "Plot No.",
         ]
-    
-    field_list = "\n".join([f"{i+1}. {field} - Look for {field.lower()} column" for i, field in enumerate(normalized_fields)])
+
+    field_list = "\n".join(
+        [
+            f"{i+1}. {field} - Look for {field.lower()} column"
+            for i, field in enumerate(normalized_fields)
+        ]
+    )
     required_list = ", ".join(required_fields)
-    
+
     prompt = f"""You are an expert at extracting structured data from PDF documents.
 
 This is a SECOND PASS with more lenient rules. Extract rows even if some fields are missing, BUT required fields MUST be present and filled.
@@ -122,6 +141,5 @@ LENIENT EXTRACTION RULES (Second Pass):
 - If any optional field is missing or cannot be found, use an empty string "" for that field
 
 Return ONLY valid JSON array, no additional text, no explanations, no markdown code blocks."""
-    
-    return prompt
 
+    return prompt

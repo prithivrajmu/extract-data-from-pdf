@@ -19,7 +19,9 @@ class FakeUploadedFile:
     def getvalue(self) -> bytes:  # pragma: no cover - simple accessor
         return self._data
 
-    def seek(self, position: int, whence: int = 0) -> None:  # pragma: no cover - delegate
+    def seek(
+        self, position: int, whence: int = 0
+    ) -> None:  # pragma: no cover - delegate
         # Some downstream consumers expect seek to exist; nothing else uses the result.
         # We provide a no-op implementation because validate_pdf_file simply resets the pointer.
         # The file content is served from stored bytes so seek has no side-effects.
@@ -46,7 +48,12 @@ def make_uploaded_pdf(name: str = "sample.pdf", num_pages: int = 1) -> FakeUploa
     return FakeUploadedFile(name=name, _data=pdf_bytes)
 
 
-def make_corrupt_pdf(name: str = "corrupt.pdf", *, missing_header: bool = False, missing_eof: bool = False) -> FakeUploadedFile:
+def make_corrupt_pdf(
+    name: str = "corrupt.pdf",
+    *,
+    missing_header: bool = False,
+    missing_eof: bool = False,
+) -> FakeUploadedFile:
     """Return a FakeUploadedFile with specific corruption applied."""
 
     pdf_bytes = build_pdf_bytes()
@@ -59,4 +66,3 @@ def make_corrupt_pdf(name: str = "corrupt.pdf", *, missing_header: bool = False,
             pdf_bytes = pdf_bytes[:eof_index]
 
     return FakeUploadedFile(name=name, _data=pdf_bytes)
-

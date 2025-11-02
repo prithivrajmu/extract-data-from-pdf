@@ -94,4 +94,3 @@ class TestCreateFieldDetectionPrompt:
         """Test that prompt mentions example output format."""
         prompt = create_field_detection_prompt()
         assert "Sr.No" in prompt or "example" in prompt.lower()
-

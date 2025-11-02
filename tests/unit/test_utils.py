@@ -114,4 +114,3 @@ def test_dataframe_to_markdown_string_generates_table():
 
     assert markdown.startswith("| filename | Plot No. |")
     assert "| file1.pdf | P1 |" in markdown
-
