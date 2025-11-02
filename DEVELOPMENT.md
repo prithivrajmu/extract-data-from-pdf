@@ -6,7 +6,7 @@ This guide covers development setup, code quality tools, and contribution workfl
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.12+
 - Git
 - Virtual environment (venv or uv)
 

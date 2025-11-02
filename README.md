@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/prithivrajmu/extract_tn_ec/actions/workflows/ci.yml/badge.svg)](https://github.com/prithivrajmu/extract_tn_ec/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Tests](https://img.shields.io/badge/tests-pytest%20%E2%9C%94%EF%B8%8F-6A5ACD.svg)](DEVELOPMENT.md#-testing)
 [![codecov](https://codecov.io/gh/prithivrajmu/extract_tn_ec/branch/main/graph/badge.svg)](https://codecov.io/gh/prithivrajmu/extract_tn_ec)
@@ -16,7 +16,7 @@ The easiest way to use this tool is through the Streamlit web interface.
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.12+
 - All dependencies from `requirements.txt`
 
 ### Installation
