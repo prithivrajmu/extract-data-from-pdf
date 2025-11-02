@@ -4,23 +4,22 @@ User-friendly EC Data Extraction Script with formatted Chandra OCR output.
 Filters out technical details and shows only relevant, human-readable progress.
 """
 
+import argparse
+import json
 import os
 import re
-import json
 import subprocess
+import sys
 import tempfile
 import threading
-import sys
 import time
-import argparse
-from pathlib import Path
+
 import pandas as pd
-from typing import List, Dict, Optional
 
 # Note: This script has its own format_chandra_line() function for formatting output
 
 
-def format_chandra_line(line: str) -> Optional[str]:
+def format_chandra_line(line: str) -> str | None:
     """
     Format a single line from Chandra OCR output to be human-readable.
     Returns None if line should be filtered out, otherwise returns formatted line.
@@ -251,13 +250,16 @@ def extract_text_from_pdf(pdf_path: str, use_structure: bool = True):
                         ):
                             with output_lock:
                                 last_output_time[0] = time.time()
-                except Exception as e:
+                except Exception:
                     pass  # Pipe closed
 
             # Progress monitor function - shows activity even when no output
             def monitor_progress(process):
                 """Monitor process and show progress indicators"""
-                import psutil
+                try:
+                    import psutil
+                except ImportError:
+                    psutil = None
 
                 start_time = time.time()
                 last_status = time.time()
@@ -345,8 +347,7 @@ def extract_text_from_pdf(pdf_path: str, use_structure: bool = True):
 
             # Progress monitor thread
             try:
-                import psutil
-
+                # psutil is imported inside monitor_progress function
                 progress_thread = threading.Thread(
                     target=monitor_progress, args=(process,), daemon=True
                 )
@@ -390,7 +391,7 @@ def extract_text_from_pdf(pdf_path: str, use_structure: bool = True):
                 print(
                     f"📂 Loading extracted data from {os.path.basename(json_file)}..."
                 )
-                with open(json_file, "r", encoding="utf-8") as f:
+                with open(json_file, encoding="utf-8") as f:
                     structured_data = json.load(f)
 
                 # Extract text from structured data
@@ -410,12 +411,12 @@ def extract_text_from_pdf(pdf_path: str, use_structure: bool = True):
                 for file in os.listdir(output_dir):
                     if file.endswith(".md"):
                         md_file = os.path.join(output_dir, file)
-                        with open(md_file, "r", encoding="utf-8") as f:
+                        with open(md_file, encoding="utf-8") as f:
                             full_text = f.read()
                         break
                     elif file.endswith(".html"):
                         html_file = os.path.join(output_dir, file)
-                        with open(html_file, "r", encoding="utf-8") as f:
+                        with open(html_file, encoding="utf-8") as f:
                             html_content = f.read()
                         full_text = re.sub(r"<[^>]+>", "", html_content)
                         break
@@ -424,7 +425,7 @@ def extract_text_from_pdf(pdf_path: str, use_structure: bool = True):
                 # Check if there are any output files at all
                 output_files = list(os.listdir(output_dir))
                 if output_files:
-                    error_msg = f"Failed to extract text from Chandra OCR output.\n"
+                    error_msg = "Failed to extract text from Chandra OCR output.\n"
                     error_msg += f"Output directory contains: {output_files}\n"
                     error_msg += f"Return code: {returncode}\n"
                     if returncode != 0:
@@ -454,8 +455,8 @@ def extract_text_from_pdf(pdf_path: str, use_structure: bool = True):
 
 
 def parse_table_rows(
-    text: str, structured_data: Optional[List] = None
-) -> List[Dict[str, str]]:
+    text: str, structured_data: list | None = None
+) -> list[dict[str, str]]:
     """
     Parse OCR text to extract table rows with the required fields.
     Only includes rows that have Plot No./ information.
@@ -553,7 +554,7 @@ def parse_table_rows(
     return rows
 
 
-def extract_data_from_pdf(pdf_path: str) -> List[Dict[str, str]]:
+def extract_data_from_pdf(pdf_path: str) -> list[dict[str, str]]:
     """Main function to extract data from a PDF file."""
     filename = os.path.basename(pdf_path)
 
@@ -624,7 +625,7 @@ Examples:
 
     if not os.path.exists(pdf_file):
         print(f"❌ Error: File {pdf_file} not found!")
-        print(f"Please check the path and try again.")
+        print("Please check the path and try again.")
         return
 
     print("=" * 70)

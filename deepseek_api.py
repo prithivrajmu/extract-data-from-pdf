@@ -4,11 +4,10 @@ Deepseek API integration for EC (Encumbrance Certificate) PDF extraction.
 Similar structure to Gemini API integration.
 """
 
-import os
-import json
 import base64
+import json
+import os
 import time
-from typing import List, Dict, Optional
 
 
 def setup_deepseek_client(api_key: str, base_url: str = "https://api.deepseek.com"):
@@ -78,7 +77,7 @@ def create_lenient_extraction_prompt() -> str:
 
 This is a SECOND PASS with more lenient rules. Extract rows even if one or two fields are missing, BUT Plot Number field MUST be present and filled.
 
-Analyze the PDF document and extract table rows. Use fuzzy matching to identify columns/fields - headers may have variations in spelling, spacing, punctuation, or language."""  # noqa: E501
+Analyze the PDF document and extract table rows. Use fuzzy matching to identify columns/fields - headers may have variations in spelling, spacing, punctuation, or language.
 
 ONLY extract rows where the Plot Number field has a value (is NOT empty). This is REQUIRED - Plot Number must be present.
 
@@ -119,7 +118,7 @@ Return ONLY valid JSON array, no additional text, no explanations, no markdown c
     return prompt
 
 
-def parse_json_response(response_text: str) -> List[Dict]:
+def parse_json_response(response_text: str) -> list[dict]:
     """
     Robustly parse JSON response with multiple fallback strategies.
     Same as Gemini implementation.
@@ -212,9 +211,9 @@ def pdf_to_base64(pdf_path: str) -> str:
 def extract_data_from_pdf_deepseek(
     pdf_path: str,
     api_key: str,
-    custom_fields: Optional[List[str]] = None,
+    custom_fields: list[str] | None = None,
     max_retries: int = 3,
-) -> List[Dict[str, str]]:
+) -> list[dict[str, str]]:
     """
     Extract data from PDF using Deepseek API with retry logic.
 
@@ -265,8 +264,9 @@ def extract_data_from_pdf_deepseek(
     # Deepseek supports vision, so we'll use the chat completions endpoint with images
     # Since PDFs need to be converted, we'll convert PDF pages to images first
     try:
-        from pdf2image import convert_from_path
         import io
+
+        from pdf2image import convert_from_path
 
         # Convert PDF to images
         images = convert_from_path(pdf_path, dpi=200)

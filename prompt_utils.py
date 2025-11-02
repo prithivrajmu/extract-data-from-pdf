@@ -3,11 +3,10 @@
 Utility functions for generating extraction prompts with custom fields.
 """
 
-from typing import List, Optional
 
 
 def create_custom_extraction_prompt(
-    custom_fields: List[str], required_fields: Optional[List[str]] = None
+    custom_fields: list[str], required_fields: list[str] | None = None
 ) -> str:
     """
     Create extraction prompt with custom fields.
@@ -81,7 +80,7 @@ Return ONLY the JSON array, nothing else."""
 
 
 def create_lenient_custom_prompt(
-    custom_fields: List[str], required_fields: Optional[List[str]] = None
+    custom_fields: list[str], required_fields: list[str] | None = None
 ) -> str:
     """
     Create lenient extraction prompt with custom fields (for retry attempts).

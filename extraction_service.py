@@ -28,10 +28,10 @@ Example:
 
 import os
 import tempfile
-from typing import List, Dict, Optional, Callable, Any
+from collections.abc import Callable
+from typing import Any
 
 from logging_config import get_logger
-
 
 logger = get_logger(__name__)
 
@@ -44,7 +44,7 @@ def extract_with_local_model(
     model_name: str = "datalab-to/chandra",
     use_cpu: bool = False,
     use_pretty: bool = False,
-) -> List[Dict[str, str]]:
+) -> list[dict[str, str]]:
     """
     Extract data using local OCR model.
 
@@ -118,7 +118,7 @@ def extract_with_local_model(
     return normalized_rows
 
 
-def extract_with_pytesseract(pdf_path: str) -> List[Dict[str, str]]:
+def extract_with_pytesseract(pdf_path: str) -> list[dict[str, str]]:
     """
     Extract data using PyTesseract (Google's Tesseract OCR).
 
@@ -148,7 +148,7 @@ def extract_with_pytesseract(pdf_path: str) -> List[Dict[str, str]]:
     return normalized_rows
 
 
-def extract_with_easyocr(pdf_path: str) -> List[Dict[str, str]]:
+def extract_with_easyocr(pdf_path: str) -> list[dict[str, str]]:
     """
     Extract data using EasyOCR.
 
@@ -181,7 +181,7 @@ def extract_with_easyocr(pdf_path: str) -> List[Dict[str, str]]:
 
 def extract_with_huggingface(
     pdf_path: str, api_key: str, model_name: str = "datalab-to/chandra"
-) -> List[Dict[str, str]]:
+) -> list[dict[str, str]]:
     """
     Extract data using HuggingFace API.
 
@@ -208,7 +208,7 @@ def extract_with_huggingface(
     return rows
 
 
-def extract_with_datalab_api(pdf_path: str, api_key: str) -> List[Dict[str, str]]:
+def extract_with_datalab_api(pdf_path: str, api_key: str) -> list[dict[str, str]]:
     """
     Extract data using Datalab API.
 
@@ -234,8 +234,8 @@ def extract_with_datalab_api(pdf_path: str, api_key: str) -> List[Dict[str, str]
 
 
 def extract_with_gemini(
-    pdf_path: str, api_key: str, custom_fields: Optional[List[str]] = None
-) -> List[Dict[str, str]]:
+    pdf_path: str, api_key: str, custom_fields: list[str] | None = None
+) -> list[dict[str, str]]:
     """
     Extract data using Gemini API.
 
@@ -265,8 +265,8 @@ def extract_with_gemini(
 
 
 def extract_with_deepseek(
-    pdf_path: str, api_key: str, custom_fields: Optional[List[str]] = None
-) -> List[Dict[str, str]]:
+    pdf_path: str, api_key: str, custom_fields: list[str] | None = None
+) -> list[dict[str, str]]:
     """
     Extract data using Deepseek API.
 
@@ -286,13 +286,13 @@ def extract_with_deepseek(
 def extract_data(
     pdf_path: str,
     method: str,
-    api_keys: Dict[str, str],
-    model_name: Optional[str] = None,
-    custom_fields: Optional[List[str]] = None,
-    local_model_options: Optional[Dict[str, Any]] = None,
+    api_keys: dict[str, str],
+    model_name: str | None = None,
+    custom_fields: list[str] | None = None,
+    local_model_options: dict[str, Any] | None = None,
     auto_detect_fields: bool = False,
-    detected_fields: Optional[List[str]] = None,
-) -> List[Dict[str, str]]:
+    detected_fields: list[str] | None = None,
+) -> list[dict[str, str]]:
     """
     Main router function that calls appropriate extraction method based on user selection.
 
@@ -442,14 +442,14 @@ def extract_data(
 
 
 def process_multiple_files(
-    pdf_files: List[str],
+    pdf_files: list[str],
     method: str,
-    api_keys: Dict[str, str],
-    model_name: Optional[str] = None,
-    progress_callback: Optional[Callable[[int, int, str], None]] = None,
+    api_keys: dict[str, str],
+    model_name: str | None = None,
+    progress_callback: Callable[[int, int, str], None] | None = None,
     auto_detect_fields: bool = False,
     field_detection_mode: str = "unified",
-) -> Dict[str, List[Dict[str, str]]]:
+) -> dict[str, list[dict[str, str]]]:
     """
     Process multiple PDF files sequentially with progress tracking.
 
@@ -562,7 +562,7 @@ def process_multiple_files(
     return results
 
 
-def save_uploaded_file(uploaded_file, temp_dir: Optional[str] = None) -> str:
+def save_uploaded_file(uploaded_file, temp_dir: str | None = None) -> str:
     """
     Save Streamlit uploaded file to temporary location.
 

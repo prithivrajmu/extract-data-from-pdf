@@ -2,33 +2,31 @@
 
 from __future__ import annotations
 
-from typing import Dict
-
 import streamlit as st
 
-from api_key_manager import save_all_api_keys, get_storage_info
-from gpu_check_utils import check_gpu_comprehensive
+from api_key_manager import get_storage_info, save_all_api_keys
 from gemini_test_modules import (
     test_gemini_basic,
     test_gemini_file_upload,
     test_gemini_json_upload,
 )
+from gpu_check_utils import check_gpu_comprehensive
+from model_fetcher import clear_cache
 from model_info import (
-    get_local_ocr_models,
     get_huggingface_ocr_models,
+    get_local_ocr_models,
     get_model_search_url,
 )
-from model_fetcher import clear_cache
 from test_api_keys import (
     test_datalab_api_key,
-    test_huggingface_api_key,
-    test_gemini_api_key,
     test_deepseek_api_key,
+    test_gemini_api_key,
+    test_huggingface_api_key,
 )
 from utils import get_default_fields, get_field_descriptions
 
 
-def render_sidebar() -> Dict:
+def render_sidebar() -> dict:
     """
     Render the entire sidebar configuration UI.
 

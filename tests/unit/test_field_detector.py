@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-
 from field_detector import (
     create_field_detection_prompt,
     normalize_field_names,

@@ -4,15 +4,15 @@ Fast CPU-only EC Data Extraction using EasyOCR.
 Much faster than Chandra on CPU - processes pages in seconds instead of minutes.
 """
 
+import argparse
 import os
 import re
-import argparse
-import pandas as pd
-from pdf2image import convert_from_path
+import time
+
 import easyocr
 import numpy as np
-from typing import List, Dict, Optional, Tuple
-import time
+import pandas as pd
+from pdf2image import convert_from_path
 
 # Try to import fuzzy matching libraries (optional but helpful)
 try:
@@ -123,7 +123,7 @@ def normalize_ocr_text(text: str) -> str:
     return normalized
 
 
-def fuzzy_match_pattern(pattern: str, text: str, threshold: int = 70) -> Optional[str]:
+def fuzzy_match_pattern(pattern: str, text: str, threshold: int = 70) -> str | None:
     """
     Use fuzzy matching to find pattern in text, handling OCR errors.
     """
@@ -208,7 +208,7 @@ def extract_document_number_fuzzy(row_text: str) -> str:
     return ""
 
 
-def extract_plot_numbers_fuzzy(row_text: str, row_lines: List[str]) -> str:
+def extract_plot_numbers_fuzzy(row_text: str, row_lines: list[str]) -> str:
     """
     Extract plot numbers using multiple strategies and fuzzy matching.
     """
@@ -299,7 +299,7 @@ def extract_plot_numbers_fuzzy(row_text: str, row_lines: List[str]) -> str:
     return ""
 
 
-def extract_names_fuzzy(row_text: str, row_lines: List[str]) -> Tuple[str, str]:
+def extract_names_fuzzy(row_text: str, row_lines: list[str]) -> tuple[str, str]:
     """
     Extract names using fuzzy matching and multiple strategies.
     Returns (executant_name, claimant_name).
@@ -436,7 +436,7 @@ def extract_survey_number_fuzzy(row_text: str, header_value: str) -> str:
     return ""
 
 
-def parse_table_rows(text: str) -> List[Dict[str, str]]:
+def parse_table_rows(text: str) -> list[dict[str, str]]:
     """
     Parse OCR text to extract table rows with the required fields.
     Only includes rows that have Plot No information.
@@ -575,7 +575,7 @@ def parse_table_rows(text: str) -> List[Dict[str, str]]:
     return rows
 
 
-def extract_data_from_pdf(pdf_path: str) -> List[Dict[str, str]]:
+def extract_data_from_pdf(pdf_path: str) -> list[dict[str, str]]:
     """Main function to extract data from a PDF file."""
     filename = os.path.basename(pdf_path)
 

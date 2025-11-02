@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+
 import pandas as pd
 import pytest
 
+from tests.fixtures.pdf_samples import make_corrupt_pdf, make_uploaded_pdf
 from utils import (
     dataframe_to_json_string,
     dataframe_to_markdown_string,
@@ -13,8 +15,6 @@ from utils import (
     format_dataframe,
     validate_pdf_file,
 )
-
-from tests.fixtures.pdf_samples import make_corrupt_pdf, make_uploaded_pdf
 
 
 def test_filter_fields_keeps_selected_and_filename():

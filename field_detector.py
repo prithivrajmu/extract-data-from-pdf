@@ -26,14 +26,13 @@ Example:
     >>> print(f"Detected fields: {fields}")
 """
 
-import os
 import json
+import os
 import re
 import time
-from typing import List, Dict, Optional, Any
+from typing import Any
 
 from logging_config import get_logger
-
 
 logger = get_logger(__name__)
 
@@ -64,7 +63,7 @@ Return ONLY the JSON array of field names."""
     return prompt
 
 
-def parse_json_response(response_text: str) -> List[str]:
+def parse_json_response(response_text: str) -> list[str]:
     """
     Robustly parse JSON response containing field names.
 
@@ -125,7 +124,7 @@ def parse_json_response(response_text: str) -> List[str]:
 
 def detect_fields_with_ai(
     pdf_path: str, api_key: str, provider: str = "gemini", max_retries: int = 3
-) -> List[str]:
+) -> list[str]:
     """
     Detect fields from PDF using AI (Gemini or Deepseek).
 
@@ -155,7 +154,7 @@ def detect_fields_with_ai(
 
 def _detect_fields_with_gemini(
     pdf_path: str, api_key: str, prompt: str, max_retries: int
-) -> List[str]:
+) -> list[str]:
     """Detect fields using Gemini API."""
     import google.generativeai as genai
 
@@ -252,12 +251,13 @@ def _detect_fields_with_gemini(
 
 def _detect_fields_with_deepseek(
     pdf_path: str, api_key: str, prompt: str, max_retries: int
-) -> List[str]:
+) -> list[str]:
     """Detect fields using Deepseek API."""
-    import requests
     import base64
-    from pdf2image import convert_from_path
     import io
+
+    import requests
+    from pdf2image import convert_from_path
 
     base_url = "https://api.deepseek.com"
     api_endpoint = f"{base_url}/v1/chat/completions"
@@ -326,7 +326,7 @@ def _detect_fields_with_deepseek(
     return []
 
 
-def detect_fields_with_ocr(pdf_path: str, ocr_method: str = "chandra") -> List[str]:
+def detect_fields_with_ocr(pdf_path: str, ocr_method: str = "chandra") -> list[str]:
     """
     Detect fields from PDF using OCR by extracting table headers.
 
@@ -377,7 +377,7 @@ def detect_fields_with_ocr(pdf_path: str, ocr_method: str = "chandra") -> List[s
     return _parse_headers_from_ocr_text(text)
 
 
-def _parse_headers_from_ocr_text(text: str) -> List[str]:
+def _parse_headers_from_ocr_text(text: str) -> list[str]:
     """
     Parse table headers from OCR text.
 
@@ -460,7 +460,7 @@ def _parse_headers_from_ocr_text(text: str) -> List[str]:
     return detected_fields
 
 
-def normalize_field_names(fields: List[str]) -> List[str]:
+def normalize_field_names(fields: list[str]) -> list[str]:
     """
     Normalize field names to standard formats.
 
@@ -522,7 +522,7 @@ def normalize_field_names(fields: List[str]) -> List[str]:
     return normalized
 
 
-def _fuzzy_match_field(field: str, mappings: Dict[str, str]) -> str:
+def _fuzzy_match_field(field: str, mappings: dict[str, str]) -> str:
     """
     Fuzzy match field name to standard name.
 
@@ -544,7 +544,7 @@ def _fuzzy_match_field(field: str, mappings: Dict[str, str]) -> str:
     return field
 
 
-def merge_field_sets(field_sets: List[List[str]]) -> List[str]:
+def merge_field_sets(field_sets: list[list[str]]) -> list[str]:
     """
     Merge multiple field sets by taking union of all fields.
 
@@ -567,9 +567,9 @@ def merge_field_sets(field_sets: List[List[str]]) -> List[str]:
 def detect_fields_from_pdf(
     pdf_path: str,
     method: str = "auto",
-    extraction_method: Optional[str] = None,
-    api_keys: Optional[Dict[str, str]] = None,
-) -> List[str]:
+    extraction_method: str | None = None,
+    api_keys: dict[str, str] | None = None,
+) -> list[str]:
     """
     Main function to detect fields from a PDF file.
 
@@ -619,12 +619,12 @@ def detect_fields_from_pdf(
 
 
 def detect_fields_batch(
-    pdf_files: List[str],
+    pdf_files: list[str],
     method: str = "auto",
-    extraction_method: Optional[str] = None,
-    api_keys: Optional[Dict[str, str]] = None,
+    extraction_method: str | None = None,
+    api_keys: dict[str, str] | None = None,
     mode: str = "unified",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Detect fields from multiple PDF files with batch processing support.
 

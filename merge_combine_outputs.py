@@ -4,8 +4,9 @@ Merge combined output Excel files from ec3, ec2, and ec directories.
 Removes duplicate rows based on all columns.
 """
 
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 
 
 def load_combined_output(directory: str) -> pd.DataFrame:

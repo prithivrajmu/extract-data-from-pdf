@@ -4,18 +4,20 @@ Streamlit webapp for EC (Encumbrance Certificate) PDF extraction.
 Modern, clean UI with multiple OCR options and API key management.
 """
 
-import streamlit as st
-import pandas as pd
 import os
 import tempfile
 import time
+
+import pandas as pd
+import streamlit as st
+
 # Import our modules
 from extraction_service import extract_data, save_uploaded_file
-from utils import validate_pdf_file, format_file_size
 from logging_config import configure_logging
 from streamlit_ui.results import render_footer, render_results_section
 from streamlit_ui.sidebar import render_sidebar
 from streamlit_ui.state import initialize_session_state, load_saved_api_keys
+from utils import format_file_size, validate_pdf_file
 
 # Configure logging before initializing UI
 configure_logging()

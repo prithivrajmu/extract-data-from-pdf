@@ -6,13 +6,12 @@ Allows supporting multiple models via transformers library.
 
 import os
 import subprocess
-from typing import Tuple, Optional, Dict
 from pathlib import Path
 
 
 def load_chandra_model(
     pdf_path: str, output_dir: str, use_cpu: bool = False
-) -> Tuple[str, Optional[Dict]]:
+) -> tuple[str, dict | None]:
     """
     Load and run Chandra OCR model via CLI.
 
@@ -66,7 +65,7 @@ def load_chandra_model(
 
 def load_transformers_model(
     model_name: str, pdf_path: str, use_cpu: bool = False
-) -> Tuple[str, Optional[Dict]]:
+) -> tuple[str, dict | None]:
     """
     Generic loader for models via transformers library.
 
@@ -82,9 +81,9 @@ def load_transformers_model(
     Each model type may need custom preprocessing/postprocessing.
     """
     try:
-        from transformers import AutoProcessor, AutoModelForVision2Seq
-        from pdf2image import convert_from_path
         import torch
+        from pdf2image import convert_from_path
+        from transformers import AutoModelForVision2Seq, AutoProcessor
 
         device = "cpu" if use_cpu else ("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -163,7 +162,7 @@ def get_model_loader(model_name: str):
         return load_transformers_model, "transformers_attempt"
 
 
-def is_model_supported(model_name: str) -> Tuple[bool, str]:
+def is_model_supported(model_name: str) -> tuple[bool, str]:
     """
     Check if a model is supported and return status.
 

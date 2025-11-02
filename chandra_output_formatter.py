@@ -6,7 +6,6 @@ Filters out technical details and shows only relevant progress information.
 
 import re
 import sys
-from typing import Optional
 
 
 class ChandraOutputFormatter:
@@ -17,7 +16,7 @@ class ChandraOutputFormatter:
         self.config_lines = 0
         self.last_progress_message = ""
 
-    def format_line(self, line: str) -> Optional[str]:
+    def format_line(self, line: str) -> str | None:
         """
         Format a single line of output.
         Returns None if line should be filtered out, otherwise returns formatted line.

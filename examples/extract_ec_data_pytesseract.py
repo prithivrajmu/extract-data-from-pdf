@@ -5,20 +5,17 @@ Fast, lightweight OCR engine that works well for text-based PDFs.
 Requires Tesseract-OCR to be installed on the system.
 """
 
+import argparse
 import os
 import re
-import argparse
-from pathlib import Path
-import pandas as pd
-from pdf2image import convert_from_path
-import pytesseract
-from typing import List, Dict, Optional
 import time
+
+import pandas as pd
+import pytesseract
+from pdf2image import convert_from_path
 
 # Try to import fuzzy matching libraries (optional but helpful)
 try:
-    from fuzzywuzzy import fuzz, process
-
     FUZZY_AVAILABLE = True
 except ImportError:
     FUZZY_AVAILABLE = False
@@ -57,7 +54,7 @@ def extract_text_from_pdf_pytesseract(pdf_path: str) -> str:
         print()
 
         # Convert PDF to images
-        print(f"📄 Converting PDF to images...")
+        print("📄 Converting PDF to images...")
         images = convert_from_path(pdf_path, dpi=300)
         print(f"   Converted {len(images)} pages")
         print()
@@ -108,7 +105,7 @@ def normalize_ocr_text(text: str) -> str:
     return text
 
 
-def parse_table_rows(text: str) -> List[Dict[str, str]]:
+def parse_table_rows(text: str) -> list[dict[str, str]]:
     """
     Parse table rows from extracted OCR text.
     Extracts: Sr.No, Document No.& Year, Name of Executant(s),
@@ -209,7 +206,7 @@ def parse_table_rows(text: str) -> List[Dict[str, str]]:
     return rows
 
 
-def extract_data_from_pdf(pdf_path: str) -> List[Dict[str, str]]:
+def extract_data_from_pdf(pdf_path: str) -> list[dict[str, str]]:
     """Main function to extract data from a PDF file."""
     filename = os.path.basename(pdf_path)
 
@@ -274,7 +271,7 @@ Examples:
 
     if not os.path.exists(pdf_file):
         print(f"❌ Error: File {pdf_file} not found!")
-        print(f"Please check the path and try again.")
+        print("Please check the path and try again.")
         return
 
     print("=" * 70)

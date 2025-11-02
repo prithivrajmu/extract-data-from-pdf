@@ -6,13 +6,13 @@ Name of Claimant(s), Survey No., Plot No.
 Only processes rows that have Plot No. information.
 """
 
-import os
+import argparse
 import json
+import os
 import sys
 import time
-import argparse
 from pathlib import Path
-from typing import List, Dict, Optional
+
 import pandas as pd
 from dotenv import load_dotenv
 
@@ -154,7 +154,7 @@ Return ONLY valid JSON array, no additional text, no explanations, no markdown c
     return prompt
 
 
-def parse_json_response(response_text: str) -> List[Dict]:
+def parse_json_response(response_text: str) -> list[dict]:
     """
     Robustly parse JSON response with multiple fallback strategies.
 
@@ -289,10 +289,10 @@ def should_skip_pdf(pdf_path: str) -> bool:
 def extract_data_from_pdf_gemini_custom(
     pdf_path: str,
     model: genai.GenerativeModel,
-    custom_fields: Optional[List[str]] = None,
+    custom_fields: list[str] | None = None,
     max_retries: int = 3,
     model_name: str = None,
-) -> List[Dict[str, str]]:
+) -> list[dict[str, str]]:
     """
     Extract data from PDF using Google Gemini AI with custom fields support.
 
@@ -308,11 +308,10 @@ def extract_data_from_pdf_gemini_custom(
     """
     from prompt_utils import (
         create_custom_extraction_prompt,
-        create_lenient_custom_prompt,
     )
 
     filename = os.path.basename(pdf_path)
-    current_model_name = model_name or getattr(model, "_model_name", "unknown")
+    _ = model_name or getattr(model, "_model_name", "unknown")  # Reserved for future use
 
     if not os.path.exists(pdf_path):
         raise FileNotFoundError(f"PDF file not found: {pdf_path}")
@@ -389,7 +388,7 @@ def extract_data_from_pdf_gemini_custom(
                         gen_error
                     ):
                         print(
-                            f"   ⚠️  Model format issue detected, trying alternative approach..."
+                            "   ⚠️  Model format issue detected, trying alternative approach..."
                         )
                         model_name_clean = getattr(
                             model, "_model_name", "gemini-2.0-flash"
@@ -579,7 +578,7 @@ def extract_data_from_pdf_gemini(
     model: genai.GenerativeModel,
     max_retries: int = 3,
     model_name: str = None,
-) -> List[Dict[str, str]]:
+) -> list[dict[str, str]]:
     """
     Extract data from PDF using Google Gemini AI with retry logic.
 
@@ -668,7 +667,7 @@ def extract_data_from_pdf_gemini(
                         gen_error
                     ):
                         print(
-                            f"   ⚠️  Model format issue detected, trying alternative approach..."
+                            "   ⚠️  Model format issue detected, trying alternative approach..."
                         )
                         # Recreate model instance
                         model_name_clean = getattr(
@@ -951,11 +950,11 @@ def extract_data_from_pdf_gemini(
 
 
 def process_batch(
-    pdf_files: List[str],
+    pdf_files: list[str],
     model: genai.GenerativeModel,
     delay_between_files: int = 5,
     model_name: str = None,
-) -> Dict[str, List[Dict[str, str]]]:
+) -> dict[str, list[dict[str, str]]]:
     """
     Process multiple PDF files in batch with delays to avoid rate limiting.
 
@@ -1088,7 +1087,7 @@ def process_directory(
     model: genai.GenerativeModel,
     model_name: str,
     delay_between_files: int,
-) -> Dict[str, List[Dict[str, str]]]:
+) -> dict[str, list[dict[str, str]]]:
     """
     Process all PDFs in a directory.
 
@@ -1230,7 +1229,7 @@ Examples:
     if not args.batch:
         if not os.path.exists(pdf_file):
             print(f"❌ Error: File {pdf_file} not found!")
-            print(f"Please check the path and try again.")
+            print("Please check the path and try again.")
             return
 
         print("=" * 70)

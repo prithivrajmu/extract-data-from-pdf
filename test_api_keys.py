@@ -4,11 +4,11 @@ Test modules for validating API keys.
 Provides test functions for Datalab, HuggingFace, Gemini, and Deepseek APIs.
 """
 
+
 import requests
-from typing import Dict, Tuple
 
 
-def test_datalab_api_key(api_key: str) -> Tuple[bool, str]:
+def test_datalab_api_key(api_key: str) -> tuple[bool, str]:
     """
     Test Datalab API key by making a simple request.
 
@@ -48,7 +48,7 @@ def test_datalab_api_key(api_key: str) -> Tuple[bool, str]:
         return False, f"❌ Error: {str(e)}"
 
 
-def test_huggingface_api_key(api_key: str) -> Tuple[bool, str]:
+def test_huggingface_api_key(api_key: str) -> tuple[bool, str]:
     """
     Test HuggingFace API key by listing available models.
 
@@ -86,7 +86,7 @@ def test_huggingface_api_key(api_key: str) -> Tuple[bool, str]:
         return False, f"❌ Error: {str(e)}"
 
 
-def test_gemini_api_key(api_key: str) -> Tuple[bool, str]:
+def test_gemini_api_key(api_key: str) -> tuple[bool, str]:
     """
     Test Gemini API key by listing available models.
 
@@ -143,7 +143,7 @@ def test_gemini_api_key(api_key: str) -> Tuple[bool, str]:
             return False, f"❌ Error: {str(e)}"
 
 
-def test_deepseek_api_key(api_key: str) -> Tuple[bool, str]:
+def test_deepseek_api_key(api_key: str) -> tuple[bool, str]:
     """
     Test Deepseek API key by making a simple request.
 
@@ -202,7 +202,7 @@ def test_deepseek_api_key(api_key: str) -> Tuple[bool, str]:
         return False, f"❌ Error: {str(e)}"
 
 
-def test_all_api_keys(keys: Dict[str, str]) -> Dict[str, Tuple[bool, str]]:
+def test_all_api_keys(keys: dict[str, str]) -> dict[str, tuple[bool, str]]:
     """
     Test all provided API keys.
 

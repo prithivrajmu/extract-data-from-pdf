@@ -6,8 +6,9 @@ Keys are stored in .env file (preferred) or api_keys.txt (fallback).
 
 import os
 from pathlib import Path
-from typing import Optional
-from dotenv import load_dotenv, set_key, find_dotenv
+
+from dotenv import find_dotenv, load_dotenv, set_key
+
 from logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -68,7 +69,7 @@ def save_api_key(provider: str, api_key: str) -> bool:
         return False
 
 
-def load_api_key(provider: str) -> Optional[str]:
+def load_api_key(provider: str) -> str | None:
     """
     Load API key from .env file.
 

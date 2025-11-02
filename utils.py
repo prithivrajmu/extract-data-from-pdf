@@ -19,19 +19,18 @@ Key Functions:
 """
 
 import io
-import os
 import json
-import pandas as pd
-from typing import List, Dict, Set, Tuple, Optional
+import os
 from datetime import datetime
 
-from logging_config import get_logger
+import pandas as pd
 
+from logging_config import get_logger
 
 logger = get_logger(__name__)
 
 
-def filter_fields(data: List[Dict], selected_fields: Set[str]) -> List[Dict]:
+def filter_fields(data: list[dict], selected_fields: set[str]) -> list[dict]:
     """
     Filter dictionary list to only include selected fields.
     Always includes 'filename' field even if not selected.
@@ -59,7 +58,7 @@ def filter_fields(data: List[Dict], selected_fields: Set[str]) -> List[Dict]:
     return filtered_data
 
 
-def format_dataframe(df: pd.DataFrame, field_order: List[str] = None) -> pd.DataFrame:
+def format_dataframe(df: pd.DataFrame, field_order: list[str] = None) -> pd.DataFrame:
     """
     Format DataFrame with consistent column order.
 
@@ -131,7 +130,7 @@ def format_file_size(size_mb: float) -> str:
         return f"{size_mb:.2f} MB"
 
 
-def validate_pdf_file(file) -> Tuple[bool, str]:
+def validate_pdf_file(file) -> tuple[bool, str]:
     """
     Validate uploaded PDF file.
 
@@ -205,7 +204,7 @@ def validate_pdf_file(file) -> Tuple[bool, str]:
     return True, ""
 
 
-def get_default_fields() -> List[str]:
+def get_default_fields() -> list[str]:
     """
     Get list of default extraction fields.
 
@@ -223,7 +222,7 @@ def get_default_fields() -> List[str]:
     ]
 
 
-def get_field_descriptions() -> Dict[str, str]:
+def get_field_descriptions() -> dict[str, str]:
     """
     Get descriptions for each field.
 
@@ -316,7 +315,7 @@ def save_dataframe_to_markdown(df: pd.DataFrame, output_path: str) -> bool:
 
 
 def dataframe_to_json_string(
-    df: pd.DataFrame, format: str = "standard", metadata: Optional[Dict] = None
+    df: pd.DataFrame, format: str = "standard", metadata: dict | None = None
 ) -> str:
     """
     Convert DataFrame to JSON string with multiple format options.
@@ -385,7 +384,7 @@ def dataframe_to_markdown_string(df: pd.DataFrame) -> str:
 
 
 def create_structured_json_output(
-    df: pd.DataFrame, metadata: Optional[Dict] = None
+    df: pd.DataFrame, metadata: dict | None = None
 ) -> str:
     """
     Create structured JSON output with metadata wrapper.
@@ -421,7 +420,7 @@ def create_structured_json_output(
     return json.dumps(output, indent=2, ensure_ascii=False)
 
 
-def create_multi_file_json(df: pd.DataFrame, metadata: Optional[Dict] = None) -> str:
+def create_multi_file_json(df: pd.DataFrame, metadata: dict | None = None) -> str:
     """
     Create multi-file JSON output organized by filename.
 
@@ -461,7 +460,7 @@ def create_multi_file_json(df: pd.DataFrame, metadata: Optional[Dict] = None) ->
     return json.dumps(output, indent=2, ensure_ascii=False)
 
 
-def create_unified_json(df: pd.DataFrame, metadata: Optional[Dict] = None) -> str:
+def create_unified_json(df: pd.DataFrame, metadata: dict | None = None) -> str:
     """
     Create unified JSON output with metadata embedded in each record.
 

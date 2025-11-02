@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional
-
 
 DEFAULT_LOG_LEVEL = os.getenv("EC_APP_LOG_LEVEL", "INFO")
 _configured = False
 
 
-def configure_logging(level: Optional[str] = None) -> None:
+def configure_logging(level: str | None = None) -> None:
     """Configure the root logger once with a structured format."""
 
     global _configured

@@ -4,7 +4,7 @@ Model information and links for local and HuggingFace OCR models.
 Now supports dynamic fetching from HuggingFace Hub API.
 """
 
-from typing import List, Dict, Optional
+
 from model_fetcher import (
     get_available_local_models,
     get_popular_ocr_models,
@@ -12,8 +12,8 @@ from model_fetcher import (
 
 
 def get_local_ocr_models(
-    api_key: Optional[str] = None, use_dynamic: bool = True
-) -> List[Dict[str, str]]:
+    api_key: str | None = None, use_dynamic: bool = True
+) -> list[dict[str, str]]:
     """
     Get list of available local OCR models with information.
     Now supports dynamic fetching from HuggingFace Hub API.
@@ -40,8 +40,8 @@ def get_local_ocr_models(
 
 
 def get_huggingface_ocr_models(
-    api_key: Optional[str] = None, use_dynamic: bool = True
-) -> List[Dict[str, str]]:
+    api_key: str | None = None, use_dynamic: bool = True
+) -> list[dict[str, str]]:
     """
     Get list of available HuggingFace OCR models via API.
     Now supports dynamic fetching from HuggingFace Hub API.
@@ -120,7 +120,7 @@ def get_model_search_url() -> str:
     return "https://huggingface.co/models?pipeline_tag=document-question-answering&sort=trending&search=ocr"
 
 
-def get_model_info_by_id(model_id: str, model_type: str = "local") -> Dict[str, str]:
+def get_model_info_by_id(model_id: str, model_type: str = "local") -> dict[str, str]:
     """
     Get information for a specific model.
 

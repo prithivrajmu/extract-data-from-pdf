@@ -4,12 +4,11 @@ Dynamic model fetcher from HuggingFace Hub API.
 Fetches available OCR and document processing models.
 """
 
-import requests
-from typing import List, Dict, Optional
-from datetime import datetime, timedelta
 import json
+from datetime import datetime, timedelta
 from pathlib import Path
 
+import requests
 
 # Cache file location
 CACHE_DIR = Path.home() / ".cache" / "extract_tn_ec"
@@ -22,13 +21,13 @@ def ensure_cache_dir():
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def load_cache() -> Optional[Dict]:
+def load_cache() -> dict | None:
     """Load cached model data."""
     if not CACHE_FILE.exists():
         return None
 
     try:
-        with open(CACHE_FILE, "r") as f:
+        with open(CACHE_FILE) as f:
             cache_data = json.load(f)
             cache_time = datetime.fromisoformat(cache_data.get("timestamp", ""))
             if datetime.now() - cache_time < CACHE_DURATION:
@@ -39,7 +38,7 @@ def load_cache() -> Optional[Dict]:
     return None
 
 
-def save_cache(models: List[Dict]):
+def save_cache(models: list[dict]):
     """Save model data to cache."""
     ensure_cache_dir()
     cache_data = {"timestamp": datetime.now().isoformat(), "models": models}
@@ -48,11 +47,11 @@ def save_cache(models: List[Dict]):
 
 
 def fetch_ocr_models_from_huggingface(
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
     limit: int = 50,
     task: str = "document-question-answering",
     for_api_use: bool = False,
-) -> List[Dict[str, str]]:
+) -> list[dict[str, str]]:
     """
     Fetch OCR models from HuggingFace Hub API.
 
@@ -184,7 +183,7 @@ def fetch_ocr_models_from_huggingface(
     return models
 
 
-def get_popular_ocr_models() -> List[Dict[str, str]]:
+def get_popular_ocr_models() -> list[dict[str, str]]:
     """
     Get a curated list of popular OCR models (fallback if API fails).
 
@@ -280,8 +279,8 @@ def get_popular_ocr_models() -> List[Dict[str, str]]:
 
 
 def get_available_local_models(
-    api_key: Optional[str] = None, use_cache: bool = True
-) -> List[Dict[str, str]]:
+    api_key: str | None = None, use_cache: bool = True
+) -> list[dict[str, str]]:
     """
     Get available local models, trying to fetch from HuggingFace API first.
 
@@ -322,7 +321,7 @@ def clear_cache():
         CACHE_FILE.unlink()
 
 
-def get_model_info(model_id: str, models: List[Dict]) -> Optional[Dict]:
+def get_model_info(model_id: str, models: list[dict]) -> dict | None:
     """Get information for a specific model from the list."""
     for model in models:
         if model["id"] == model_id:

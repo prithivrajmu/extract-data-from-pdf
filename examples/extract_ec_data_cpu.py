@@ -4,11 +4,11 @@ CPU-only version of EC Data Extraction using Chandra OCR Python API.
 Forces CPU mode explicitly to avoid CUDA errors.
 """
 
+import argparse
 import os
 import re
-import argparse
+
 import pandas as pd
-from typing import List, Dict
 
 # Force CPU mode before importing torch or chandra
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -155,7 +155,7 @@ def extract_text_from_pdf_cpu(pdf_path: str) -> tuple:
 
                 # Generate OCR result
                 print(
-                    f"   Running OCR (CPU mode - this may take 5-10 minutes per page)"
+                    "   Running OCR (CPU mode - this may take 5-10 minutes per page)"
                 )
                 print("   ⏳ Very slow on CPU - please be patient, it IS working...")
 
@@ -175,7 +175,7 @@ def extract_text_from_pdf_cpu(pdf_path: str) -> tuple:
                 except RuntimeError as e:
                     if "CUDA" in str(e) or "cuda" in str(e).lower():
                         print(
-                            f"   ⚠️  CUDA error caught, forcing model to CPU and retrying..."
+                            "   ⚠️  CUDA error caught, forcing model to CPU and retrying..."
                         )
                         # Force everything to CPU and retry
                         try:
@@ -228,7 +228,7 @@ def extract_text_from_pdf_cpu(pdf_path: str) -> tuple:
         raise
 
 
-def parse_table_rows(text: str) -> List[Dict[str, str]]:
+def parse_table_rows(text: str) -> list[dict[str, str]]:
     """Parse OCR text to extract table rows with the required fields."""
     lines = text.split("\n")
     rows = []
@@ -314,7 +314,7 @@ def parse_table_rows(text: str) -> List[Dict[str, str]]:
     return rows
 
 
-def extract_data_from_pdf(pdf_path: str) -> List[Dict[str, str]]:
+def extract_data_from_pdf(pdf_path: str) -> list[dict[str, str]]:
     """Main function to extract data from a PDF file."""
     filename = os.path.basename(pdf_path)
 

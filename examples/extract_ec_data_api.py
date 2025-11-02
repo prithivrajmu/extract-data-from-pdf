@@ -6,12 +6,12 @@ No local model download required - uses Datalab's managed API endpoint.
 Documentation: https://documentation.datalab.to/docs/recipes/marker/conversion-api-overview
 """
 
+import argparse
 import os
 import re
 import time
-import argparse
+
 import pandas as pd
-from typing import List, Dict, Optional
 import requests
 from dotenv import load_dotenv
 
@@ -163,7 +163,7 @@ def extract_text_from_pdf_datalab_api(pdf_path: str, api_key: str) -> tuple:
         raise
 
 
-def parse_table_rows(text: str) -> List[Dict[str, str]]:
+def parse_table_rows(text: str) -> list[dict[str, str]]:
     """Parse OCR text to extract table rows with the required fields."""
     lines = text.split("\n")
     rows = []
@@ -250,8 +250,8 @@ def parse_table_rows(text: str) -> List[Dict[str, str]]:
 
 
 def extract_data_from_pdf(
-    pdf_path: str, api_key: Optional[str] = None
-) -> List[Dict[str, str]]:
+    pdf_path: str, api_key: str | None = None
+) -> list[dict[str, str]]:
     """Main function to extract data from a PDF file."""
     if not api_key:
         raise ValueError("DATALAB_API_KEY is required. Get one from https://datalab.to")

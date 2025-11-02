@@ -6,15 +6,17 @@ Name of Claimant(s), Survey No./, Plot No./
 Only processes rows that have Plot No./ information.
 """
 
+import argparse
+import json
 import os
 import re
 import subprocess
+import sys
 import tempfile
 import threading
-import sys
-import argparse
+from typing import Optional
+
 import pandas as pd
-from typing import List, Dict
 
 
 def extract_text_from_pdf(pdf_path: str, use_structure: bool = True):
@@ -144,7 +146,7 @@ def extract_text_from_pdf(pdf_path: str, use_structure: bool = True):
 
             if os.path.exists(json_file):
                 print(f"Loading structured data from {json_file}")
-                with open(json_file, "r", encoding="utf-8") as f:
+                with open(json_file, encoding="utf-8") as f:
                     structured_data = json.load(f)
 
                 # Extract text from structured data
@@ -164,13 +166,13 @@ def extract_text_from_pdf(pdf_path: str, use_structure: bool = True):
                 for file in os.listdir(output_dir):
                     if file.endswith(".md"):
                         md_file = os.path.join(output_dir, file)
-                        with open(md_file, "r", encoding="utf-8") as f:
+                        with open(md_file, encoding="utf-8") as f:
                             full_text = f.read()
                         break
                     elif file.endswith(".html"):
                         html_file = os.path.join(output_dir, file)
                         # Simple HTML text extraction
-                        with open(html_file, "r", encoding="utf-8") as f:
+                        with open(html_file, encoding="utf-8") as f:
                             html_content = f.read()
                         # Remove HTML tags (simple approach)
                         full_text = re.sub(r"<[^>]+>", "", html_content)
@@ -194,8 +196,8 @@ def extract_text_from_pdf(pdf_path: str, use_structure: bool = True):
 
 
 def parse_table_rows(
-    text: str, structured_data: Optional[List] = None
-) -> List[Dict[str, str]]:
+    text: str, structured_data: Optional[list] = None  # noqa: UP006
+) -> list[dict[str, str]]:
     """
     Parse OCR text to extract table rows with the required fields.
     Only includes rows that have Plot No./ information.
@@ -311,7 +313,7 @@ def parse_table_rows(
     return rows
 
 
-def extract_data_from_pdf(pdf_path: str) -> List[Dict[str, str]]:
+def extract_data_from_pdf(pdf_path: str) -> list[dict[str, str]]:
     """
     Main function to extract data from a PDF file.
 
@@ -394,7 +396,7 @@ Examples:
 
     if not os.path.exists(pdf_file):
         print(f"Error: File not found: {pdf_file}")
-        print(f"Please check the path and try again.")
+        print("Please check the path and try again.")
         return
 
     print("=" * 60)

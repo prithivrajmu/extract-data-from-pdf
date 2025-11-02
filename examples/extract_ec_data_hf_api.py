@@ -9,19 +9,18 @@ If you get errors, consider using extract_ec_data_api.py with Datalab API instea
 Documentation: https://huggingface.co/docs/inference-providers
 """
 
+import argparse
+import base64
 import os
 import re
 import time
-import argparse
-from pathlib import Path
+from io import BytesIO
+
 import pandas as pd
-from typing import List, Dict, Optional
+import requests
+from dotenv import load_dotenv
 from pdf2image import convert_from_path
 from PIL import Image
-import requests
-import base64
-from io import BytesIO
-from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
@@ -108,7 +107,7 @@ def chandra_ocr_hf_api(image: Image.Image, api_key: str, retries: int = 3) -> st
                         if attempt < retries - 1:
                             continue
                         raise Exception(
-                            f"Model not available on Inference Providers API (404)"
+                            "Model not available on Inference Providers API (404)"
                         )
                     elif response.status_code == 401:
                         print("   ⚠️  API key invalid or missing")
@@ -168,7 +167,7 @@ def chandra_ocr_hf_api(image: Image.Image, api_key: str, retries: int = 3) -> st
                 if payload_format_idx < len(payload_formats) - 1:
                     continue  # Try next format
                 if attempt < retries - 1:
-                    print(f"   ⚠️  Timeout, retrying...")
+                    print("   ⚠️  Timeout, retrying...")
                     time.sleep(5)
                     break
                 raise
@@ -244,7 +243,7 @@ def extract_text_from_pdf_hf_api(pdf_path: str, api_key: str) -> tuple:
         raise
 
 
-def parse_table_rows(text: str) -> List[Dict[str, str]]:
+def parse_table_rows(text: str) -> list[dict[str, str]]:
     """Parse OCR text to extract table rows with the required fields."""
     lines = text.split("\n")
     rows = []
@@ -331,8 +330,8 @@ def parse_table_rows(text: str) -> List[Dict[str, str]]:
 
 
 def extract_data_from_pdf(
-    pdf_path: str, api_key: Optional[str] = None
-) -> List[Dict[str, str]]:
+    pdf_path: str, api_key: str | None = None
+) -> list[dict[str, str]]:
     """Main function to extract data from a PDF file."""
     if not api_key:
         raise ValueError(
@@ -399,7 +398,7 @@ Examples:
 
     if not os.path.exists(pdf_file):
         print(f"❌ Error: File {pdf_file} not found!")
-        print(f"Please check the path and try again.")
+        print("Please check the path and try again.")
         return
 
     # Get API key from .env file (loaded by load_dotenv()) or environment variables

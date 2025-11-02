@@ -7,13 +7,13 @@ Test files should be placed in the test_file/ directory.
 """
 
 import os
-from typing import Dict, Tuple, Optional
+
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
-def test_gemini_basic(api_key: str) -> Tuple[bool, Dict]:
+def test_gemini_basic(api_key: str) -> tuple[bool, dict]:
     """
     Test Gemini 2.5 Flash basic functionality.
     Based on test_gemini_2.5_flash.py
@@ -142,8 +142,8 @@ def test_gemini_basic(api_key: str) -> Tuple[bool, Dict]:
 
 
 def test_gemini_file_upload(
-    api_key: str, test_pdf_path: Optional[str] = None
-) -> Tuple[bool, Dict]:
+    api_key: str, test_pdf_path: str | None = None
+) -> tuple[bool, dict]:
     """
     Test Gemini with file upload.
     Based on test_gemini_file_upload.py
@@ -332,8 +332,8 @@ def test_gemini_file_upload(
 
 
 def test_gemini_json_upload(
-    api_key: str, test_pdf_path: Optional[str] = None
-) -> Tuple[bool, Dict]:
+    api_key: str, test_pdf_path: str | None = None
+) -> tuple[bool, dict]:
     """
     Test Gemini with file upload + JSON output.
     Based on test_gemini_json_upload.py
