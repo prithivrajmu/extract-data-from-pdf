@@ -14,7 +14,7 @@ patched on a best-effort basis when the fix is low-risk.
 We take the security of this project seriously. If you discover a vulnerability:
 
 1. **Do not** open a public issue.
-2. Email the maintainer directly at **security@prithiv.dev** with the following:
+2. Email the maintainer directly at **prithivrajmu@gmail.com** with the following:
    - Detailed description of the issue and potential impact
    - Steps to reproduce (proof-of-concept preferred)
    - Suggested fix or mitigation (if available)
