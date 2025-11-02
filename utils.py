@@ -1,6 +1,21 @@
 #!/usr/bin/env python3
 """
 Helper utilities for file handling, field filtering, and data formatting.
+
+This module provides utility functions for:
+    - Filtering extracted data by selected fields
+    - Formatting DataFrames with consistent column ordering
+    - Validating PDF files (signature, structure, content)
+    - Converting DataFrames to various output formats (CSV, Excel, JSON, Markdown)
+    - File size utilities
+    - Field management (default fields, descriptions)
+
+Key Functions:
+    - filter_fields(): Filter data by selected field names
+    - format_dataframe(): Format DataFrame with consistent column order
+    - validate_pdf_file(): Comprehensive PDF validation
+    - dataframe_to_*(): Convert DataFrame to different formats
+    - get_default_fields(): Get list of default extraction fields
 """
 
 import io

@@ -1,11 +1,34 @@
 #!/usr/bin/env python3
 """
 Unified extraction service that routes to appropriate OCR/AI method based on user selection.
+
+This module provides a unified interface for extracting structured data from PDF documents
+using multiple OCR and AI methods. It acts as a router, calling the appropriate extraction
+function based on the selected method.
+
+Supported Extraction Methods:
+    - Local Model (Chandra OCR): High-accuracy local OCR with GPU/CPU support
+    - PyTesseract: Google's Tesseract OCR engine
+    - EasyOCR: Fast CPU-based OCR with lightweight models
+    - HuggingFace: Cloud-based OCR via Inference API
+    - Datalab API: High-accuracy OCR via Datalab Marker API
+    - Gemini AI: Google's AI-powered extraction with context understanding
+    - Deepseek AI: AI-powered extraction with vision capabilities
+
+Key Functions:
+    - extract_data(): Main router function for single PDF extraction
+    - process_multiple_files(): Batch processing for multiple PDFs
+    - extract_with_*(): Method-specific extraction functions
+
+Example:
+    >>> api_keys = {'gemini': 'your-api-key'}
+    >>> rows = extract_data('document.pdf', method='gemini', api_keys=api_keys)
+    >>> print(f"Extracted {len(rows)} rows")
 """
 
 import os
 import tempfile
-from typing import List, Dict, Optional, Callable
+from typing import List, Dict, Optional, Callable, Any
 from pathlib import Path
 
 from logging_config import get_logger
@@ -250,25 +273,80 @@ def extract_data(
     api_keys: Dict[str, str],
     model_name: Optional[str] = None,
     custom_fields: Optional[List[str]] = None,
-    local_model_options: Optional[Dict] = None,
+    local_model_options: Optional[Dict[str, Any]] = None,
     auto_detect_fields: bool = False,
     detected_fields: Optional[List[str]] = None
 ) -> List[Dict[str, str]]:
     """
-    Main router function that calls appropriate extraction method.
+    Main router function that calls appropriate extraction method based on user selection.
+    
+    This is the primary entry point for extracting structured data from PDF documents.
+    It automatically routes to the correct extraction method and handles field detection
+    if enabled.
     
     Args:
-        pdf_path: Path to PDF file
-        method: Extraction method ('easyocr', 'huggingface', 'datalab', 'gemini', 'deepseek')
-        api_keys: Dictionary of API keys for different providers
-        model_name: Optional model name (for HuggingFace)
-        custom_fields: Optional list of custom field names to extract
-        local_model_options: Optional dict with 'use_cpu' and 'use_pretty' keys
-        auto_detect_fields: If True, automatically detect fields before extraction
-        detected_fields: Pre-detected field names (used if auto_detect_fields=False)
+        pdf_path: Path to PDF file to extract data from
+        method: Extraction method name. Valid values:
+            - 'local' or 'local_model': Local OCR model (Chandra)
+            - 'pytesseract' or 'tesseract': PyTesseract OCR
+            - 'easyocr': EasyOCR library
+            - 'huggingface' or 'hf': HuggingFace Inference API
+            - 'datalab': Datalab Marker API
+            - 'gemini': Google Gemini AI
+            - 'deepseek': Deepseek AI
+        api_keys: Dictionary mapping provider names to API keys.
+            Keys: 'huggingface', 'datalab', 'gemini', 'deepseek'
+        model_name: Optional model identifier (mainly for HuggingFace).
+            Default: 'datalab-to/chandra'
+        custom_fields: Optional list of custom field names to extract.
+            Only supported by AI methods (Gemini, Deepseek).
+            Example: ['Village Name', 'Registration Date', 'Property Type']
+        local_model_options: Optional dictionary with local model configuration:
+            - 'use_cpu': Force CPU mode even if GPU available (bool)
+            - 'use_pretty': Use formatted output for Chandra (bool)
+        auto_detect_fields: If True, automatically detect field names from PDF
+            before extraction. Works best with AI methods.
+        detected_fields: Pre-detected field names list. Used when
+            auto_detect_fields=False but fields were detected separately.
         
     Returns:
-        List of extracted row dictionaries
+        List of dictionaries, where each dictionary represents one extracted row.
+        Each row contains field names as keys and extracted values as strings.
+        Always includes 'filename' field with the PDF filename.
+        
+        Example:
+            [
+                {
+                    'filename': 'document.pdf',
+                    'Plot No.': '123',
+                    'Survey No.': '456',
+                    'Name of Executant(s)': 'John Doe'
+                },
+                ...
+            ]
+    
+    Raises:
+        ValueError: If method is unknown or required API key is missing
+        FileNotFoundError: If PDF file doesn't exist
+        Exception: Various extraction errors depending on method
+    
+    Example:
+        >>> # Extract using Gemini AI with custom fields
+        >>> api_keys = {'gemini': 'your-api-key'}
+        >>> rows = extract_data(
+        ...     'document.pdf',
+        ...     method='gemini',
+        ...     api_keys=api_keys,
+        ...     custom_fields=['Village Name', 'Plot No.']
+        ... )
+        
+        >>> # Extract using local model with CPU mode
+        >>> rows = extract_data(
+        ...     'document.pdf',
+        ...     method='local',
+        ...     api_keys={},
+        ...     local_model_options={'use_cpu': True}
+        ... )
     """
     method = method.lower()
     
@@ -349,24 +427,62 @@ def process_multiple_files(
     method: str,
     api_keys: Dict[str, str],
     model_name: Optional[str] = None,
-    progress_callback: Optional[Callable] = None,
+    progress_callback: Optional[Callable[[int, int, str], None]] = None,
     auto_detect_fields: bool = False,
     field_detection_mode: str = 'unified'
 ) -> Dict[str, List[Dict[str, str]]]:
     """
-    Process multiple PDF files sequentially.
+    Process multiple PDF files sequentially with progress tracking.
+    
+    This function processes multiple PDF files one by one, aggregating results
+    into a dictionary. It supports progress callbacks for UI updates and can
+    detect fields either once from the first file or per-file.
     
     Args:
-        pdf_files: List of PDF file paths
-        method: Extraction method
-        api_keys: Dictionary of API keys
-        model_name: Optional model name
-        progress_callback: Optional callback function for progress updates
-        auto_detect_fields: If True, automatically detect fields before extraction
-        field_detection_mode: 'unified' (detect once from first file) or 'per_file' (detect per-file)
+        pdf_files: List of absolute or relative paths to PDF files to process
+        method: Extraction method name (same as extract_data())
+        api_keys: Dictionary mapping provider names to API keys
+        model_name: Optional model identifier (mainly for HuggingFace)
+        progress_callback: Optional callback function called after each file.
+            Signature: callback(current_file_index, total_files, filename)
+            Example: lambda idx, total, name: print(f"Processing {idx}/{total}: {name}")
+        auto_detect_fields: If True, automatically detect fields before extraction.
+            When True, uses field_detection_mode to determine detection strategy.
+        field_detection_mode: Field detection strategy when auto_detect_fields=True:
+            - 'unified': Detect fields once from the first file, use for all files
+            - 'per_file': Detect fields from each file individually and merge
         
     Returns:
-        Dictionary mapping filename to list of extracted rows
+        Dictionary mapping PDF filenames (basename) to lists of extracted rows.
+        Each value is a list of dictionaries, same format as extract_data().
+        
+        Example:
+            {
+                'file1.pdf': [
+                    {'filename': 'file1.pdf', 'Plot No.': '123', ...},
+                    {'filename': 'file1.pdf', 'Plot No.': '456', ...}
+                ],
+                'file2.pdf': [
+                    {'filename': 'file2.pdf', 'Plot No.': '789', ...}
+                ]
+            }
+    
+    Raises:
+        ValueError: If method is unknown or required API key is missing
+        FileNotFoundError: If any PDF file doesn't exist
+        Exception: Various extraction errors depending on method
+    
+    Example:
+        >>> files = ['doc1.pdf', 'doc2.pdf', 'doc3.pdf']
+        >>> api_keys = {'datalab': 'your-api-key'}
+        >>> results = process_multiple_files(
+        ...     files,
+        ...     method='datalab',
+        ...     api_keys=api_keys,
+        ...     progress_callback=lambda i, t, n: print(f"{i}/{t}: {n}")
+        ... )
+        >>> total_rows = sum(len(rows) for rows in results.values())
+        >>> print(f"Extracted {total_rows} total rows from {len(results)} files")
     """
     detected_fields = None
     

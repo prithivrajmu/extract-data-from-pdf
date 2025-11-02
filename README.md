@@ -352,6 +352,37 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for det
 
 ## 📚 Additional Documentation
 
+- `API.md` - Complete API documentation for all core modules
+- `DEVELOPMENT.md` - Development setup, code quality tools, and workflows
 - `GPU_SETUP.md` - GPU configuration guide
 - `MODEL_LOADING_ISSUES.md` - Troubleshooting model loading
 - `TROUBLESHOOTING.md` - General troubleshooting guide
+- `CONTRIBUTING.md` - Contribution guidelines and coding standards
+
+---
+
+## 📖 API Documentation
+
+For detailed API documentation, see [API.md](API.md). The API documentation includes:
+
+- Function signatures and parameters
+- Return value descriptions
+- Error handling information
+- Usage examples
+- Best practices
+
+**Quick API Example:**
+
+```python
+from extraction_service import extract_data
+
+api_keys = {'gemini': 'your-api-key'}
+rows = extract_data(
+    'document.pdf',
+    method='gemini',
+    api_keys=api_keys,
+    custom_fields=['Village Name', 'Plot No.']
+)
+```
+
+---

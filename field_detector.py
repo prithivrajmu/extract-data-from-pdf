@@ -1,14 +1,36 @@
 #!/usr/bin/env python3
 """
 Field detection module for automatically identifying fields in PDF documents.
-Supports both AI-based (Gemini/Deepseek) and OCR-based detection methods.
+
+This module provides functionality to automatically detect field names/column headers
+from PDF documents before extraction. This is especially useful for documents with
+custom or unknown field structures.
+
+Supported Detection Methods:
+    - AI-based detection (Gemini, Deepseek): Uses vision AI to identify table headers
+    - OCR-based detection: Extracts text and identifies patterns that look like headers
+
+Key Functions:
+    - detect_fields_batch(): Detect fields from multiple PDF files
+    - detect_fields_from_pdf(): Detect fields from a single PDF
+    - create_field_detection_prompt(): Generate prompt for AI-based detection
+
+Example:
+    >>> from field_detector import detect_fields_from_pdf
+    >>> fields = detect_fields_from_pdf(
+    ...     'document.pdf',
+    ...     method='ai',
+    ...     extraction_method='gemini',
+    ...     api_keys={'gemini': 'your-api-key'}
+    ... )
+    >>> print(f"Detected fields: {fields}")
 """
 
 import os
 import json
 import re
 import time
-from typing import List, Dict, Optional, Tuple, Set
+from typing import List, Dict, Optional, Tuple, Set, Any
 from pathlib import Path
 
 from logging_config import get_logger
@@ -578,23 +600,53 @@ def detect_fields_batch(
     extraction_method: Optional[str] = None,
     api_keys: Optional[Dict[str, str]] = None,
     mode: str = 'unified'
-) -> Dict[str, List[str]]:
+) -> Dict[str, Any]:
     """
-    Detect fields from multiple PDF files.
+    Detect fields from multiple PDF files with batch processing support.
+    
+    This function can detect fields from multiple PDF files using either a unified
+    approach (detect once from first file) or per-file approach (detect from each).
     
     Args:
-        pdf_files: List of PDF file paths
-        method: Detection method ('auto', 'ai', 'ocr')
-        extraction_method: Extraction method to use
-        api_keys: Dictionary of API keys
-        mode: Detection mode
-            - 'unified': Detect from first file, return unified field set
-            - 'per_file': Detect per-file, return union of all fields + per-file mapping
-            
+        pdf_files: List of absolute or relative paths to PDF files
+        method: Detection method. Valid values:
+            - 'auto': Automatically choose best method based on extraction_method
+            - 'ai': Use AI-based detection (Gemini/Deepseek)
+            - 'ocr': Use OCR-based detection
+        extraction_method: Extraction method that will be used for actual extraction.
+            Used to determine best detection method when method='auto'.
+            Examples: 'gemini', 'deepseek', 'chandra', 'easyocr'
+        api_keys: Dictionary mapping provider names to API keys.
+            Required if using AI-based detection.
+            Keys: 'gemini', 'deepseek'
+        mode: Detection mode for batch processing:
+            - 'unified': Detect fields once from the first file, use for all files.
+              Faster, assumes similar document structure.
+            - 'per_file': Detect fields from each file individually and merge.
+              More accurate for documents with varying structures.
+        
     Returns:
-        Dictionary with:
-        - 'fields': Unified list of all detected fields
-        - 'per_file': (if mode='per_file') Dictionary mapping filename to detected fields
+        Dictionary containing detected fields:
+            - 'fields': List[str] - Unified list of all detected field names
+            - 'per_file': Dict[str, List[str]] - (if mode='per_file') Mapping of
+              filename to detected fields for that file
+        
+    Raises:
+        ValueError: If method is invalid or required API keys are missing
+        FileNotFoundError: If any PDF file doesn't exist
+        Exception: Various errors depending on detection method
+    
+    Example:
+        >>> files = ['doc1.pdf', 'doc2.pdf']
+        >>> api_keys = {'gemini': 'your-api-key'}
+        >>> result = detect_fields_batch(
+        ...     files,
+        ...     method='ai',
+        ...     extraction_method='gemini',
+        ...     api_keys=api_keys,
+        ...     mode='unified'
+        ... )
+        >>> print(f"Detected fields: {result['fields']}")
     """
     if not pdf_files:
         return {'fields': []}
