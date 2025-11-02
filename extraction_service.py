@@ -429,13 +429,13 @@ def extract_data(
         api_key = api_keys.get("gemini")
         if not api_key:
             raise ValueError("Gemini API key is required")
-        return extract_with_gemini(pdf_path, api_key, custom_fields)
+        return extract_with_gemini(pdf_path, api_key, custom_fields=custom_fields)
 
     elif method == "deepseek":
         api_key = api_keys.get("deepseek")
         if not api_key:
             raise ValueError("Deepseek API key is required")
-        return extract_with_deepseek(pdf_path, api_key, custom_fields)
+        return extract_with_deepseek(pdf_path, api_key, custom_fields=custom_fields)
 
     else:
         raise ValueError(f"Unknown extraction method: {method}")
