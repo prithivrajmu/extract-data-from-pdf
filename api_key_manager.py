@@ -8,6 +8,9 @@ import os
 from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv, set_key, find_dotenv
+from logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def get_env_file_path() -> str:
@@ -61,7 +64,7 @@ def save_api_key(provider: str, api_key: str) -> bool:
         
         return True
     except Exception as e:
-        print(f"Error saving API key: {e}")
+        logger.error(f"Error saving API key for {provider}: {e}")
         return False
 
 
@@ -97,7 +100,7 @@ def load_api_key(provider: str) -> Optional[str]:
         
         return None
     except Exception as e:
-        print(f"Error loading API key: {e}")
+        logger.error(f"Error loading API key for {provider}: {e}")
         return None
 
 
