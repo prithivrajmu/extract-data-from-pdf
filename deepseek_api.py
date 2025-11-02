@@ -77,7 +77,8 @@ def create_lenient_extraction_prompt() -> str:
 
 This is a SECOND PASS with more lenient rules. Extract rows even if one or two fields are missing, BUT Plot Number field MUST be present and filled.
 
-Analyze the PDF document and extract table rows. Use fuzzy matching to identify columns/fields - headers may have variations in spelling, spacing, punctuation, or language.
+Analyze the PDF document and extract table rows. Use fuzzy matching to identify
+columns/fields - headers may have variations in spelling, spacing, punctuation, or language.
 
 ONLY extract rows where the Plot Number field has a value (is NOT empty). This is REQUIRED - Plot Number must be present.
 
@@ -253,6 +254,7 @@ def extract_data_from_pdf_deepseek(
 
         def lenient_prompt_func():
             return create_lenient_custom_prompt(custom_fields)
+
     else:
         prompt = create_extraction_prompt()
         lenient_prompt_func = create_lenient_extraction_prompt

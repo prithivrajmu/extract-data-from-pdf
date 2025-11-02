@@ -156,7 +156,12 @@ def test_gemini_file_upload(
     Returns:
         Tuple of (success: bool, results: dict)
     """
-    results: dict[str, Any] = {"success": False, "tests": [], "errors": [], "model_used": None}
+    results: dict[str, Any] = {
+        "success": False,
+        "tests": [],
+        "errors": [],
+        "model_used": None,
+    }
 
     try:
         import google.generativeai as genai
@@ -346,7 +351,12 @@ def test_gemini_json_upload(
     Returns:
         Tuple of (success: bool, results: dict)
     """
-    results: dict[str, Any] = {"success": False, "tests": [], "errors": [], "model_used": None}
+    results: dict[str, Any] = {
+        "success": False,
+        "tests": [],
+        "errors": [],
+        "model_used": None,
+    }
 
     try:
         import google.generativeai as genai

@@ -4,7 +4,6 @@ Utility functions for generating extraction prompts with custom fields.
 """
 
 
-
 def create_custom_extraction_prompt(
     custom_fields: list[str], required_fields: list[str] | None = None
 ) -> str:

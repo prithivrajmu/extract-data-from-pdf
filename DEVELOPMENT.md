@@ -232,11 +232,10 @@ def process_data(
 The CI pipeline (`.github/workflows/ci.yml`) automatically:
 
 1. Checks code formatting with Black
-2. Runs linting with flake8 and ruff
-3. Performs type checking with mypy
-4. Runs all unit tests
-5. Generates coverage reports
-6. Uploads coverage to Codecov (if configured)
+2. Runs linting with flake8
+3. Runs all unit tests
+4. Generates coverage reports
+5. Uploads coverage to Codecov (if configured)
 
 All checks must pass for pull requests to be merged.
 
@@ -283,8 +282,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
 
 Before submitting a PR:
 1. ✅ Run `black .` to format code
-2. ✅ Run `ruff check .` to check linting
-3. ✅ Run `mypy .` to check types
-4. ✅ Run `pytest` to ensure all tests pass
-5. ✅ Update documentation if needed
+2. ✅ Run `flake8` to check linting
+3. ✅ Run `pytest` to ensure all tests pass
+4. ✅ Update documentation if needed
+
+**Note:** Ruff and MyPy can be run manually for additional checks but are not required for CI.
 

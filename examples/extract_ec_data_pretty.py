@@ -292,7 +292,10 @@ def extract_text_from_pdf(pdf_path: str, use_structure: bool = True):
                                     dots = (dots + 1) % 4
                                     status_dots = "." * dots
                                     sys.stdout.write(
-                                        f"\r⏳ Loading model weights{status_dots} ({elapsed_min}m {elapsed_sec}s, CPU: {cpu_percent:.1f}%, RAM: {mem_mb:.0f}MB)     "
+                                        f"\r⏳ Loading model weights{status_dots} "
+                                        f"({elapsed_min}m {elapsed_sec}s, "
+                                        f"CPU: {cpu_percent:.1f}%, "
+                                        f"RAM: {mem_mb:.0f}MB)     "
                                     )
                                     sys.stdout.flush()
                             except (psutil.NoSuchProcess, psutil.AccessDenied):

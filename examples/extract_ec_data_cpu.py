@@ -16,7 +16,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = ""
 os.environ["HF_DEVICE_MAP"] = "cpu"
 
 # Import torch first and monkey-patch to force CPU
-import torch
+import torch  # noqa: E402
 
 original_cuda_available = torch.cuda.is_available
 torch.cuda.is_available = lambda: False  # Force CPU mode
@@ -155,9 +155,7 @@ def extract_text_from_pdf_cpu(pdf_path: str) -> tuple:
                 batch = [BatchInputItem(image=image, prompt_type="ocr_layout")]
 
                 # Generate OCR result
-                print(
-                    "   Running OCR (CPU mode - this may take 5-10 minutes per page)"
-                )
+                print("   Running OCR (CPU mode - this may take 5-10 minutes per page)")
                 print("   ⏳ Very slow on CPU - please be patient, it IS working...")
 
                 # Ensure model is on CPU before generation
