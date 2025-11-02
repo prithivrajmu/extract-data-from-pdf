@@ -231,7 +231,7 @@ def test_gemini_file_upload(api_key: str, test_pdf_path: Optional[str] = None) -
                         if pdf_file:
                             try:
                                 genai.delete_file(pdf_file.name)
-                            except:
+                            except Exception:
                                 pass
                         continue
                     
@@ -256,7 +256,7 @@ def test_gemini_file_upload(api_key: str, test_pdf_path: Optional[str] = None) -
                         if pdf_file:
                             try:
                                 genai.delete_file(pdf_file.name)
-                            except:
+                            except Exception:
                                 pass
                         
                         return True, results
@@ -270,7 +270,7 @@ def test_gemini_file_upload(api_key: str, test_pdf_path: Optional[str] = None) -
                         if pdf_file:
                             try:
                                 genai.delete_file(pdf_file.name)
-                            except:
+                            except Exception:
                                 pass
                         continue
                     
@@ -401,7 +401,7 @@ def test_gemini_json_upload(api_key: str, test_pdf_path: Optional[str] = None) -
                         if pdf_file:
                             try:
                                 genai.delete_file(pdf_file.name)
-                            except:
+                            except Exception:
                                 pass
                         continue
                     
@@ -427,7 +427,7 @@ def test_gemini_json_upload(api_key: str, test_pdf_path: Optional[str] = None) -
                         if pdf_file:
                             try:
                                 genai.delete_file(pdf_file.name)
-                            except:
+                            except Exception:
                                 pass
                         
                         return True, results
@@ -441,7 +441,7 @@ def test_gemini_json_upload(api_key: str, test_pdf_path: Optional[str] = None) -
                         if pdf_file:
                             try:
                                 genai.delete_file(pdf_file.name)
-                            except:
+                            except Exception:
                                 pass
                         continue
                     

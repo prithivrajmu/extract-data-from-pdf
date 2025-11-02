@@ -1228,7 +1228,7 @@ def main():
                     for temp_file in temp_files:
                         try:
                             os.remove(temp_file)
-                        except:
+                        except OSError:
                             pass
                     
                     # Final progress update
@@ -1260,7 +1260,7 @@ def main():
                     try:
                         import shutil
                         shutil.rmtree(temp_dir, ignore_errors=True)
-                    except:
+                    except OSError:
                         pass
     
     # Display Results

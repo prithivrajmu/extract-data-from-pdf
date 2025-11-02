@@ -172,8 +172,9 @@ def check_memory():
             print()
             print("  💡 Model requires ~18GB RAM for CPU inference")
             print("  💡 With GPU: requires ~10GB GPU VRAM")
-    except:
+    except (OSError, subprocess.SubprocessError) as error:
         print("  ⚠️  Could not check memory")
+        print(f"      Details: {error}")
 
 
 def recommendations():

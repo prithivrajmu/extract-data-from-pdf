@@ -89,7 +89,7 @@ def chandra_ocr_hf_api(image: Image.Image, api_key: str, retries: int = 3) -> st
                     try:
                         error_data = response.json()
                         wait_time = error_data.get("estimated_time", 30)
-                    except:
+                    except ValueError:
                         wait_time = 30
                     print(f"   ⏳ Model is loading, waiting {wait_time} seconds...")
                     time.sleep(wait_time)
@@ -119,7 +119,7 @@ def chandra_ocr_hf_api(image: Image.Image, api_key: str, retries: int = 3) -> st
                 # Parse response
                 try:
                     result = response.json()
-                except:
+                except ValueError:
                     return response.text
                 
                 # Extract text from response

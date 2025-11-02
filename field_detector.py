@@ -196,8 +196,8 @@ def _detect_fields_with_gemini(pdf_path: str, api_key: str, prompt: str, max_ret
         if pdf_file:
             try:
                 genai.delete_file(pdf_file.name)
-            except:
-                pass
+            except Exception as delete_error:
+                print(f"⚠️  Could not delete uploaded Gemini file: {delete_error}")
 
 
 def _detect_fields_with_deepseek(pdf_path: str, api_key: str, prompt: str, max_retries: int) -> List[str]:

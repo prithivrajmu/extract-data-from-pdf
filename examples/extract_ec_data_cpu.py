@@ -166,7 +166,7 @@ def extract_text_from_pdf_cpu(pdf_path: str) -> tuple:
                             model.to('cpu')
                         if hasattr(model, 'device') and str(model.device) != 'cpu':
                             model = model.to('cpu')
-                except:
+                except Exception:
                     pass
                 
                 try:
@@ -178,7 +178,7 @@ def extract_text_from_pdf_cpu(pdf_path: str) -> tuple:
                         try:
                             if hasattr(manager, 'model'):
                                 manager.model = manager.model.to('cpu')
-                        except:
+                        except Exception:
                             pass
                         result = manager.generate(batch)[0]
                     else:

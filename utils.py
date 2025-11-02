@@ -91,7 +91,7 @@ def get_file_size_mb(file_path: str) -> float:
     try:
         size_bytes = os.path.getsize(file_path)
         return size_bytes / (1024 * 1024)
-    except:
+    except OSError:
         return 0.0
 
 

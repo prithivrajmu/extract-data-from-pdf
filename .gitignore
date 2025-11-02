@@ -1,3 +1,46 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment and secrets
+.env
+.env.*
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Logs and reports
+*.log
+coverage/
+
+# Generated data and outputs
+*.csv
+*.xlsx
+*.json
+*.txt
+*.md.bak
+
+# Uploaded or test PDFs
+test_file/*.pdf
+
+# OS-specific files
+.DS_Store
+Thumbs.db
 # Python
 __pycache__/
 *.py[cod]

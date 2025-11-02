@@ -509,7 +509,7 @@ def extract_data_from_pdf_gemini_custom(pdf_path: str, model: genai.GenerativeMo
         if pdf_file:
             try:
                 genai.delete_file(pdf_file.name)
-            except:
+            except Exception:
                 pass
         raise Exception(f"Failed to process {filename}: {e}")
 
@@ -633,7 +633,7 @@ def extract_data_from_pdf_gemini(pdf_path: str, model: genai.GenerativeModel, ma
                             if 'generateContent' in m.supported_generation_methods:
                                 print(f"  - {m.name}")
                         print("\n💡 Try setting GEMINI_MODEL environment variable to one of the above models.")
-                    except:
+                    except Exception:
                         pass
                 
                 if retry == max_retries - 1:
@@ -813,7 +813,7 @@ def extract_data_from_pdf_gemini(pdf_path: str, model: genai.GenerativeModel, ma
         if pdf_file:
             try:
                 genai.delete_file(pdf_file.name)
-            except:
+            except Exception:
                 pass
         # Don't re-raise, let the caller handle it
         raise Exception(f"Failed to process {filename}: {e}")
@@ -992,7 +992,7 @@ def process_directory(directory: str, model: genai.GenerativeModel, model_name: 
                     df_existing = pd.read_csv(csv_file)
                     filename = os.path.basename(pdf_file)
                     all_existing_rows[filename] = df_existing.to_dict('records')
-                except:
+                except Exception:
                     pass
         return all_existing_rows
     
@@ -1012,7 +1012,7 @@ def process_directory(directory: str, model: genai.GenerativeModel, model_name: 
                     if os.path.exists(csv_file):
                         df_existing = pd.read_csv(csv_file)
                         all_results[filename] = df_existing.to_dict('records')
-                except:
+                except Exception:
                     all_results[filename] = []
     
     return all_results

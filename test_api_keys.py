@@ -187,7 +187,7 @@ def test_deepseek_api_key(api_key: str) -> Tuple[bool, str]:
             try:
                 error_data = response.json()
                 error_msg = error_data.get('error', {}).get('message', f"Status {response.status_code}")
-            except:
+            except ValueError:
                 error_msg = f"Status {response.status_code}"
             return False, f"❌ API error: {error_msg}"
             

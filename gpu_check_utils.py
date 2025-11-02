@@ -59,7 +59,7 @@ def check_nvidia_driver() -> Tuple[bool, Dict]:
                             try:
                                 memory_str = memory_parts[0].split()[-1]
                                 info['gpu_memory'] = f"{int(memory_str) / 1024:.1f} GB"
-                            except:
+                            except (ValueError, IndexError):
                                 pass
             
             # Count GPUs
@@ -104,13 +104,13 @@ def check_pytorch_cuda() -> Tuple[bool, Dict]:
             info['available'] = True
             try:
                 info['cuda_version'] = torch.version.cuda
-            except:
-                pass
+            except AttributeError:
+                info['cuda_version'] = None
             
             try:
                 info['cudnn_version'] = str(torch.backends.cudnn.version())
-            except:
-                pass
+            except (AttributeError, TypeError):
+                info['cudnn_version'] = None
             
             info['gpu_count'] = torch.cuda.device_count()
             

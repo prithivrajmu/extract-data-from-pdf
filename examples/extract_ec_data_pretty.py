@@ -225,7 +225,7 @@ def extract_text_from_pdf(pdf_path: str, use_structure: bool = True):
                 
                 try:
                     proc = psutil.Process(process.pid)
-                except:
+                except (psutil.Error, ProcessLookupError):
                     proc = None
                 
                 while process.poll() is None:
