@@ -3,7 +3,6 @@
 Diagnostic script to check Chandra OCR model loading status and provide recommendations.
 """
 
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -60,7 +59,7 @@ def check_model_files():
             for weight_name, shard_file in weight_map.items():
                 shard_files.add(shard_file)
             total_shards = len(shard_files) if shard_files else 4
-    except Exception as e:
+    except Exception:
         # Fallback: check existing files
         total_shards = 4  # Default for this model
 

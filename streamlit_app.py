@@ -9,12 +9,9 @@ import pandas as pd
 import os
 import tempfile
 import time
-from typing import Dict, List, Set
-from pathlib import Path
-
 # Import our modules
 from extraction_service import extract_data, save_uploaded_file
-from utils import validate_pdf_file, format_file_size, get_file_size_mb
+from utils import validate_pdf_file, format_file_size
 from logging_config import configure_logging
 from streamlit_ui.results import render_footer, render_results_section
 from streamlit_ui.sidebar import render_sidebar
@@ -145,7 +142,7 @@ def main():
     auto_detect_fields = config["auto_detect_fields"]
     use_custom_fields = config["use_custom_fields"]
     output_formats = config["output_formats"]
-    json_format = config["json_format"]
+    _ = config["json_format"]  # Reserved for future use
 
     # Main Content Area
     st.markdown("---")
@@ -384,7 +381,7 @@ def main():
 
                         try:
                             # Save uploaded file temporarily
-                            details_text.markdown(f"💾 Saving file temporarily...")
+                            details_text.markdown("💾 Saving file temporarily...")
                             temp_file_path = save_uploaded_file(uploaded_file, temp_dir)
                             temp_files.append(temp_file_path)
 
@@ -425,7 +422,7 @@ def main():
                                 )
                             else:
                                 details_text.markdown(
-                                    f"🔍 Extracting data from PDF (this may take 30-60 seconds)..."
+                                    "🔍 Extracting data from PDF (this may take 30-60 seconds)..."
                                 )
                                 rows = extract_data(
                                     temp_file_path,

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import io
 from dataclasses import dataclass
-from typing import Optional
 
 from PyPDF2 import PdfWriter
 

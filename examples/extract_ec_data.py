@@ -8,16 +8,13 @@ Only processes rows that have Plot No./ information.
 
 import os
 import re
-import json
 import subprocess
 import tempfile
-import shutil
 import threading
 import sys
 import argparse
-from pathlib import Path
 import pandas as pd
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 
 def extract_text_from_pdf(pdf_path: str, use_structure: bool = True):
@@ -45,7 +42,7 @@ def extract_text_from_pdf(pdf_path: str, use_structure: bool = True):
             output_dir = os.path.join(temp_dir, "chandra_output")
             os.makedirs(output_dir, exist_ok=True)
 
-            print(f"Running Chandra OCR...")
+            print("Running Chandra OCR...")
             print("=" * 60)
             print("⚠️  IMPORTANT: First run may take 10-20 minutes!")
             print("   - Downloading models (~2GB) - happens once")
@@ -396,7 +393,7 @@ Examples:
                 pdf_file = os.path.join(project_root, pdf_file)
 
     if not os.path.exists(pdf_file):
-        print(f"Error: File {pdf_file} not found!")
+        print(f"Error: File not found: {pdf_file}")
         print(f"Please check the path and try again.")
         return
 

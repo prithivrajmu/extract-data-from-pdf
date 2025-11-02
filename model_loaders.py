@@ -5,9 +5,8 @@ Allows supporting multiple models via transformers library.
 """
 
 import os
-import tempfile
 import subprocess
-from typing import Tuple, Optional, Dict, Any
+from typing import Tuple, Optional, Dict
 from pathlib import Path
 
 
@@ -85,7 +84,6 @@ def load_transformers_model(
     try:
         from transformers import AutoProcessor, AutoModelForVision2Seq
         from pdf2image import convert_from_path
-        from PIL import Image
         import torch
 
         device = "cpu" if use_cpu else ("cuda" if torch.cuda.is_available() else "cpu")

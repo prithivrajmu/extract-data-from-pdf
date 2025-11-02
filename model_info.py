@@ -8,8 +8,6 @@ from typing import List, Dict, Optional
 from model_fetcher import (
     get_available_local_models,
     get_popular_ocr_models,
-    clear_cache,
-    fetch_ocr_models_from_huggingface,
 )
 
 
@@ -59,8 +57,6 @@ def get_huggingface_ocr_models(
         try:
             from model_fetcher import (
                 fetch_ocr_models_from_huggingface,
-                load_cache,
-                clear_cache,
             )
 
             # Try to fetch models for API use

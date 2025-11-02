@@ -4,7 +4,6 @@ Merge combined output Excel files from ec3, ec2, and ec directories.
 Removes duplicate rows based on all columns.
 """
 
-import os
 import pandas as pd
 from pathlib import Path
 
@@ -132,7 +131,7 @@ def main():
     print(" " * 25 + "Summary")
     print("=" * 70)
     print()
-    print(f"📁 Files merged:")
+    print("📁 Files merged:")
     for directory in directories:
         excel_file = Path(directory) / f"{directory}_combine_output.xlsx"
         if excel_file.exists():

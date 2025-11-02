@@ -7,7 +7,7 @@ Test files should be placed in the test_file/ directory.
 """
 
 import os
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, Tuple, Optional
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -87,7 +87,7 @@ def test_gemini_basic(api_key: str) -> Tuple[bool, Dict]:
                 {
                     "name": "JSON Output",
                     "status": "success",
-                    "message": f"JSON response received",
+                    "message": "JSON response received",
                 }
             )
         except Exception as e:

@@ -3,7 +3,6 @@
 Monitor Chandra OCR model download progress in real-time.
 """
 
-import os
 import time
 from pathlib import Path
 

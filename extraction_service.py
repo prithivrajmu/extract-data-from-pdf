@@ -29,7 +29,6 @@ Example:
 import os
 import tempfile
 from typing import List, Dict, Optional, Callable, Any
-from pathlib import Path
 
 from logging_config import get_logger
 

@@ -30,8 +30,7 @@ import os
 import json
 import re
 import time
-from typing import List, Dict, Optional, Tuple, Set, Any
-from pathlib import Path
+from typing import List, Dict, Optional, Any
 
 from logging_config import get_logger
 
@@ -289,7 +288,6 @@ def _detect_fields_with_deepseek(
     ]
 
     # Make API request
-    response = None
     for retry in range(max_retries):
         try:
             payload = {

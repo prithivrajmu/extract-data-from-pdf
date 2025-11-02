@@ -10,7 +10,6 @@ import os
 import re
 import time
 import argparse
-from pathlib import Path
 import pandas as pd
 from typing import List, Dict, Optional
 import requests
@@ -119,7 +118,7 @@ def extract_text_from_pdf_datalab_api(pdf_path: str, api_key: str) -> tuple:
         check_url = initial_response.get("request_check_url")
 
         print(f"   ✓ PDF submitted successfully (Request ID: {request_id})")
-        print(f"   🔄 Polling for completion...")
+        print("   🔄 Polling for completion...")
 
         # Step 2: Poll for completion
         result = poll_datalab_status(check_url, api_key, max_polls=300, poll_interval=2)
@@ -316,8 +315,8 @@ Examples:
                 pdf_file = os.path.join(project_root, pdf_file)
 
     if not os.path.exists(pdf_file):
-        print(f"❌ Error: File {pdf_file} not found!")
-        print(f"Please check the path and try again.")
+        print(f"❌ Error: File not found: {pdf_file}")
+        print("Please check the path and try again.")
         return
 
     # Get API key from .env file (loaded by load_dotenv()) or environment variables

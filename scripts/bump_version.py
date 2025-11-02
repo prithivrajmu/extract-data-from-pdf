@@ -59,11 +59,9 @@ def update_changelog(new_version: str, release_date: str = None) -> None:
     content = changelog_path.read_text()
 
     # Find the first [Unreleased] section and add new version after it
-    unreleased_pattern = r"## \[Unreleased\]\n\n([^\n]+)\n"
-
     # Get the current version from existing changelog
     version_match = re.search(r"## \[(\d+\.\d+\.\d+)\]", content)
-    current_version = version_match.group(1) if version_match else "1.0.0"
+    _ = version_match.group(1) if version_match else "1.0.0"  # Reserved for validation
 
     # Create new version entry
     new_section = f"""## [Unreleased]
@@ -151,10 +149,10 @@ def main():
 
         print(f"\n✅ Version bumped to {new_version} successfully!")
         print("\nNext steps:")
-        print(f"  1. Review changes: git diff")
+        print("  1. Review changes: git diff")
         print(f"  2. Commit: git commit -am 'chore(release): v{new_version}'")
         print(f"  3. Tag: git tag -a v{new_version} -m 'Release v{new_version}'")
-        print(f"  4. Push: git push && git push --tags")
+        print("  4. Push: git push && git push --tags")
 
     except Exception as e:
         print(f"❌ Error: {e}")

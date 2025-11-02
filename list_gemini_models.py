@@ -2,11 +2,11 @@
 """List available Gemini models"""
 
 import os
+
 from dotenv import load_dotenv
+import google.generativeai as genai
 
 load_dotenv()
-
-import google.generativeai as genai
 
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:

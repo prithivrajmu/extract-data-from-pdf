@@ -4,7 +4,7 @@ GPU check utilities for Streamlit UI.
 """
 
 import subprocess
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 
 def check_nvidia_driver() -> Tuple[bool, Dict]:

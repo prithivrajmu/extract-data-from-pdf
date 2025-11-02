@@ -6,12 +6,9 @@ Forces CPU mode explicitly to avoid CUDA errors.
 
 import os
 import re
-import json
-import tempfile
 import argparse
-from pathlib import Path
 import pandas as pd
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 # Force CPU mode before importing torch or chandra
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -66,10 +63,9 @@ if hasattr(torch.Tensor, "cuda"):
 
     torch.Tensor.cuda = _cpu_safe_tensor_cuda
 
-from chandra.model import InferenceManager
-from chandra.model.schema import BatchInputItem
-from pdf2image import convert_from_path
-from PIL import Image
+from chandra.model import InferenceManager  # noqa: E402
+from chandra.model.schema import BatchInputItem  # noqa: E402
+from pdf2image import convert_from_path  # noqa: E402
 
 
 def extract_text_from_pdf_cpu(pdf_path: str) -> tuple:
@@ -142,7 +138,7 @@ def extract_text_from_pdf_cpu(pdf_path: str) -> tuple:
             print(f"   Warning: Could not force model to CPU: {e}")
 
         # Convert PDF to images
-        print(f"\n📄 Converting PDF to images...")
+        print("\n📄 Converting PDF to images...")
         images = convert_from_path(pdf_path, dpi=300)
         print(f"   Converted {len(images)} pages")
 
@@ -161,7 +157,7 @@ def extract_text_from_pdf_cpu(pdf_path: str) -> tuple:
                 print(
                     f"   Running OCR (CPU mode - this may take 5-10 minutes per page)"
                 )
-                print(f"   ⏳ Very slow on CPU - please be patient, it IS working...")
+                print("   ⏳ Very slow on CPU - please be patient, it IS working...")
 
                 # Ensure model is on CPU before generation
                 try:
@@ -379,8 +375,8 @@ Examples:
                 pdf_file = os.path.join(project_root, pdf_file)
 
     if not os.path.exists(pdf_file):
-        print(f"❌ Error: File {pdf_file} not found!")
-        print(f"Please check the path and try again.")
+        print(f"❌ Error: File not found: {pdf_file}")
+        print("Please check the path and try again.")
         return
 
     print("=" * 70)

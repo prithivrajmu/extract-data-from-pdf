@@ -9,7 +9,6 @@ import json
 import base64
 import time
 from typing import List, Dict, Optional
-from pathlib import Path
 
 
 def setup_deepseek_client(api_key: str, base_url: str = "https://api.deepseek.com"):
@@ -79,7 +78,7 @@ def create_lenient_extraction_prompt() -> str:
 
 This is a SECOND PASS with more lenient rules. Extract rows even if one or two fields are missing, BUT Plot Number field MUST be present and filled.
 
-Analyze the PDF document and extract table rows. Use fuzzy matching to identify columns/fields - headers may have variations in spelling, spacing, punctuation, or language.
+Analyze the PDF document and extract table rows. Use fuzzy matching to identify columns/fields - headers may have variations in spelling, spacing, punctuation, or language."""  # noqa: E501
 
 ONLY extract rows where the Plot Number field has a value (is NOT empty). This is REQUIRED - Plot Number must be present.
 
@@ -240,7 +239,7 @@ def extract_data_from_pdf_deepseek(
 
     # Convert PDF to base64
     try:
-        pdf_base64 = pdf_to_base64(pdf_path)
+        _ = pdf_to_base64(pdf_path)  # PDF conversion validated
     except Exception as e:
         raise Exception(f"Failed to read PDF file: {e}")
 
@@ -252,7 +251,9 @@ def extract_data_from_pdf_deepseek(
         )
 
         prompt = create_custom_extraction_prompt(custom_fields)
-        lenient_prompt_func = lambda: create_lenient_custom_prompt(custom_fields)
+
+        def lenient_prompt_func():
+            return create_lenient_custom_prompt(custom_fields)
     else:
         prompt = create_extraction_prompt()
         lenient_prompt_func = create_lenient_extraction_prompt
@@ -265,7 +266,6 @@ def extract_data_from_pdf_deepseek(
     # Since PDFs need to be converted, we'll convert PDF pages to images first
     try:
         from pdf2image import convert_from_path
-        from PIL import Image
         import io
 
         # Convert PDF to images
@@ -482,7 +482,7 @@ def extract_data_from_pdf_deepseek(
 
             if lenient_rows:
                 formatted_rows = lenient_rows
-        except Exception as e:
+        except Exception:
             # If lenient extraction fails, continue with empty results
             pass
 

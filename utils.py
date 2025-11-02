@@ -23,7 +23,6 @@ import os
 import json
 import pandas as pd
 from typing import List, Dict, Set, Tuple, Optional
-from pathlib import Path
 from datetime import datetime
 
 from logging_config import get_logger
@@ -273,7 +272,7 @@ def save_results_to_file(
             return False
 
         return True
-    except Exception as e:
+    except Exception:
         logger.exception("Error saving file to %s", output_path)
         return False
 
@@ -311,7 +310,7 @@ def save_dataframe_to_markdown(df: pd.DataFrame, output_path: str) -> bool:
                 f.write(row_line + "\n")
 
         return True
-    except Exception as e:
+    except Exception:
         logger.exception("Error saving markdown file to %s", output_path)
         return False
 

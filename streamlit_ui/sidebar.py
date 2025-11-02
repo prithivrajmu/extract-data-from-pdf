@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict
 
 import streamlit as st
 
@@ -53,13 +53,40 @@ def render_sidebar() -> Dict:
 
         # Define methods with tooltips/descriptions and extraction types
         method_descriptions = {
-            "EasyOCR": "Fast CPU-based OCR using EasyOCR library. Lightweight (~100MB models), quick setup, good for simple text extraction. No API key needed.",
-            "PyTesseract": "Google's Tesseract OCR engine via PyTesseract. Fast, lightweight, works well for text-based PDFs. Requires Tesseract-OCR installed on system.",
-            "Local Model": "Download and run OCR models locally (Chandra OCR). High accuracy for documents/tables. First run downloads ~2GB models. Supports GPU/CPU.",
-            "HuggingFace": "Use HuggingFace Inference API for OCR. Requires HuggingFace API key. Cloud-based, no local model download needed.",
-            "Datalab API": "High-accuracy OCR via Datalab Marker API. Best for structured documents and tables. Requires Datalab API key. Recommended for production.",
-            "Gemini AI": "Google's Gemini AI for intelligent data extraction. Understands context and can extract custom fields. Requires Gemini API key.",
-            "Deepseek AI": "Deepseek AI for document extraction with vision capabilities. Can extract custom fields. Requires Deepseek API key.",
+            "EasyOCR": (
+                "Fast CPU-based OCR using EasyOCR library. "
+                "Lightweight (~100MB models), quick setup, good for simple text extraction. "
+                "No API key needed."
+            ),
+            "PyTesseract": (
+                "Google's Tesseract OCR engine via PyTesseract. "
+                "Fast, lightweight, works well for text-based PDFs. "
+                "Requires Tesseract-OCR installed on system."
+            ),
+            "Local Model": (
+                "Download and run OCR models locally (Chandra OCR). "
+                "High accuracy for documents/tables. First run downloads ~2GB models. "
+                "Supports GPU/CPU."
+            ),
+            "HuggingFace": (
+                "Use HuggingFace Inference API for OCR. "
+                "Requires HuggingFace API key. "
+                "Cloud-based, no local model download needed."
+            ),
+            "Datalab API": (
+                "High-accuracy OCR via Datalab Marker API. "
+                "Best for structured documents and tables. "
+                "Requires Datalab API key. Recommended for production."
+            ),
+            "Gemini AI": (
+                "Google's Gemini AI for intelligent data extraction. "
+                "Understands context and can extract custom fields. "
+                "Requires Gemini API key."
+            ),
+            "Deepseek AI": (
+                "Deepseek AI for document extraction with vision capabilities. "
+                "Can extract custom fields. Requires Deepseek API key."
+            ),
         }
 
         # Define extraction types for each method (shown in dropdown)
@@ -730,7 +757,7 @@ def render_sidebar() -> Dict:
                         if nvidia["gpu_memory"]:
                             st.text(f"Memory: {nvidia['gpu_memory']}")
                     else:
-                        st.error(f"❌ NVIDIA driver not available")
+                        st.error("❌ NVIDIA driver not available")
                         if nvidia["error"]:
                             st.text(f"Error: {nvidia['error']}")
 

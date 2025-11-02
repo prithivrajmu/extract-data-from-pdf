@@ -5,7 +5,6 @@ Fetches available OCR and document processing models.
 """
 
 import requests
-import os
 from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 import json
@@ -300,7 +299,6 @@ def get_available_local_models(
             if hf_models:
                 # Merge with popular models, prioritizing fetched ones
                 popular = get_popular_ocr_models()
-                popular_ids = {m["id"] for m in popular}
                 # Add popular models that weren't fetched
                 for model in popular:
                     if model["id"] not in {m["id"] for m in hf_models}:

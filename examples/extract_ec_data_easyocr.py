@@ -7,7 +7,6 @@ Much faster than Chandra on CPU - processes pages in seconds instead of minutes.
 import os
 import re
 import argparse
-from pathlib import Path
 import pandas as pd
 from pdf2image import convert_from_path
 import easyocr
@@ -17,7 +16,7 @@ import time
 
 # Try to import fuzzy matching libraries (optional but helpful)
 try:
-    from fuzzywuzzy import fuzz, process
+    from fuzzywuzzy import fuzz
 
     FUZZY_AVAILABLE = True
 except ImportError:
@@ -58,7 +57,7 @@ def extract_text_from_pdf_easyocr(pdf_path: str) -> str:
         print()
 
         # Convert PDF to images
-        print(f"📄 Converting PDF to images...")
+        print("📄 Converting PDF to images...")
         images = convert_from_path(pdf_path, dpi=300)
         print(f"   Converted {len(images)} pages")
         print()
@@ -447,25 +446,6 @@ def parse_table_rows(text: str) -> List[Dict[str, str]]:
     lines = text.split("\n")
     rows = []
 
-    # Pattern to identify serial numbers at the start of a line
-    serial_pattern = re.compile(r"^\s*(\d+)\s*$|^\s*(\d+)\s+")
-
-    # Patterns for extracting different fields
-    # Document No & Year: patterns like "1439/2005", "5135/2007", "727/1997"
-    doc_pattern = re.compile(r"(\d{2,6}/\d{4})")
-
-    # Plot No: look for patterns like "103/3", "104/1", "85/8", "85/9"
-    # Can appear as part of "Village & 103/3, 104/1" or "Schedule 103/-12.85"
-    plot_no_pattern = re.compile(
-        r"(?:Plot\s+No[./:\s]*|Village[^&]*&[^,]*|Schedule[^,]*)?([0-9]+/[0-9]+)",
-        re.IGNORECASE,
-    )
-
-    # Survey No: patterns like "Survey 103/3" or "103/3" near Survey
-    survey_pattern = re.compile(
-        r"Survey[^0-9]*([0-9]+/[0-9]+)|^([0-9]+/[0-9]+).*Survey", re.IGNORECASE
-    )
-
     # Clean lines
     lines = [line.strip() for line in lines if line.strip()]
 
@@ -659,8 +639,8 @@ Examples:
                 pdf_file = os.path.join(project_root, pdf_file)
 
     if not os.path.exists(pdf_file):
-        print(f"❌ Error: File {pdf_file} not found!")
-        print(f"Please check the path and try again.")
+        print(f"❌ Error: File not found: {pdf_file}")
+        print("Please check the path and try again.")
         return
 
     print("=" * 70)
