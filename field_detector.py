@@ -40,6 +40,7 @@ logger = get_logger(__name__)
 def create_field_detection_prompt() -> str:
     """
     Create prompt for detecting fields/columns from PDF table headers.
+    Uses generic example to avoid biasing detection toward specific document types.
 
     Returns:
         Prompt string for AI field detection
@@ -56,10 +57,10 @@ INSTRUCTIONS:
 
 RETURN FORMAT: Valid JSON array of strings only, no explanations, no markdown.
 
-Example output format:
-["Sr.No", "Document No.& Year", "Name of Executant(s)", "Name of Claimant(s)", "Survey No.", "Plot No."]
+Example output format (generic example - use actual column names from the document):
+["Column 1", "Column 2", "Column 3"]
 
-Return ONLY the JSON array of field names."""
+Return ONLY the JSON array of field names as they appear in the document."""
     return prompt
 
 
@@ -463,6 +464,7 @@ def _parse_headers_from_ocr_text(text: str) -> list[str]:
 def normalize_field_names(fields: list[str]) -> list[str]:
     """
     Normalize field names to standard formats.
+    Only normalizes known field variations (e.g., EC fields), preserves others as-is.
 
     Args:
         fields: List of field names
@@ -473,7 +475,8 @@ def normalize_field_names(fields: list[str]) -> list[str]:
     normalized = []
     seen = set()
 
-    # Mapping of variations to standard names
+    # Mapping of variations to standard names (primarily for encumbrance preset compatibility)
+    # These mappings help normalize common variations while preserving other field names
     field_mappings = {
         "sr.no": "Sr.No",
         "sr no": "Sr.No",
@@ -511,8 +514,11 @@ def normalize_field_names(fields: list[str]) -> list[str]:
         if field_lower in field_mappings:
             normalized_field = field_mappings[field_lower]
         else:
-            # Try fuzzy matching
+            # Try fuzzy matching for known fields
             normalized_field = _fuzzy_match_field(field, field_mappings)
+            # If no match found, preserve original field name (for non-EC fields)
+            if not normalized_field:
+                normalized_field = field
 
         # Avoid duplicates
         if normalized_field and normalized_field not in seen:

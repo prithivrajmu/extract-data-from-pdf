@@ -91,4 +91,7 @@ class TestCreateFieldDetectionPrompt:
     def test_prompt_mentions_example_format(self):
         """Test that prompt mentions example output format."""
         prompt = create_field_detection_prompt()
-        assert "Sr.No" in prompt or "example" in prompt.lower()
+        # Prompt should mention example format (now generic, not EC-specific)
+        assert "example" in prompt.lower() or "format" in prompt.lower()
+        # Should NOT contain EC-specific fields (generalized)
+        assert "Sr.No" not in prompt

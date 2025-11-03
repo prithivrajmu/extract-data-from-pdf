@@ -7,6 +7,7 @@ from collections.abc import Iterable
 import streamlit as st
 
 from api_key_manager import load_api_key
+from field_presets import get_available_presets
 from utils import get_default_fields
 
 
@@ -29,6 +30,7 @@ def initialize_session_state(default_fields: Iterable[str] | None = None) -> Non
     st.session_state.setdefault("selected_fields", set(default_fields))
     st.session_state.setdefault("custom_fields", [])
     st.session_state.setdefault("selected_ocr_method", "EasyOCR")
+    st.session_state.setdefault("selected_preset", "encumbrance")
 
 
 def load_saved_api_keys() -> None:

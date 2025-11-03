@@ -23,6 +23,7 @@ from test_api_keys import (
     test_gemini_api_key,
     test_huggingface_api_key,
 )
+from field_presets import get_available_presets, get_preset_fields
 from utils import get_default_fields, get_field_descriptions
 
 
@@ -557,6 +558,31 @@ def render_sidebar() -> dict:
         st.markdown("---")
         st.subheader("📋 Field Selection")
 
+        # Preset Selection
+        if "selected_preset" not in st.session_state:
+            st.session_state.selected_preset = "encumbrance"
+
+        presets = get_available_presets()
+        preset_options = {v["name"]: k for k, v in presets.items()}
+        preset_display_names = list(preset_options.keys())
+
+        selected_preset_display = st.selectbox(
+            "Field Preset",
+            options=preset_display_names,
+            index=preset_display_names.index(
+                presets[st.session_state.selected_preset]["name"]
+            )
+            if st.session_state.selected_preset in presets
+            else 0,
+            help="Select a predefined field preset or use custom fields below.",
+        )
+        st.session_state.selected_preset = preset_options[selected_preset_display]
+
+        # Show preset description
+        selected_preset_info = presets[st.session_state.selected_preset]
+        if selected_preset_info.get("description"):
+            st.caption(f"📝 {selected_preset_info['description']}")
+
         # Auto-detect Fields Option
         auto_detect_fields = st.checkbox(
             "Auto-detect Fields",
@@ -617,8 +643,9 @@ def render_sidebar() -> dict:
             )
             st.info(f"Extracting {len(st.session_state.custom_fields)} custom field(s)")
         else:
-            # Use default fields with selection
-            default_fields = get_default_fields()
+            # Use preset fields with selection
+            preset_name = st.session_state.selected_preset
+            default_fields = get_default_fields(preset_name=preset_name)
             field_descriptions = get_field_descriptions()
 
             # Select all / Deselect all buttons
