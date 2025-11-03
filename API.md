@@ -63,6 +63,14 @@ def extract_data(
 - `FileNotFoundError`: If PDF file doesn't exist
 - `Exception`: Various extraction errors depending on method
 
+**CPU/GPU Selection:**
+
+- **Local Model**: Supports CPU/GPU selection via `local_model_options` parameter:
+  - `use_cpu=True`: Force CPU mode even if GPU is available
+  - `use_cpu=False`: Use GPU if available (default)
+- **Other Methods**: Cloud-based methods (HuggingFace, Datalab, Gemini, Deepseek) use provider's infrastructure
+- **EasyOCR/PyTesseract**: CPU-based OCR engines (GPU not configurable)
+
 **Example:**
 
 ```python
@@ -270,6 +278,213 @@ def detect_fields_batch(
 - `Dict[str, Any]`: Dictionary containing:
   - `'fields'`: List of detected field names
   - `'per_file'`: Dictionary mapping filenames to their detected fields (if mode='per_file')
+
+---
+
+## field_presets
+
+Module for managing field presets and custom field configurations. Presets allow users to quickly select predefined field configurations for common document types, while also supporting custom field definitions.
+
+### `get_field_preset()`
+
+Get field preset configuration by name.
+
+```python
+def get_field_preset(preset_name: str) -> dict[str, Any] | None
+```
+
+**Parameters:**
+
+- `preset_name` (str): Name of the preset (e.g., "encumbrance", "invoice"). Case-insensitive.
+
+**Returns:**
+
+- `dict[str, Any] | None`: Dictionary containing preset configuration, or None if not found. Structure:
+  ```python
+  {
+      "name": str,              # Display name for the preset
+      "fields": list[str],      # List of field names to extract
+      "required_fields": list[str],  # Fields that must have values
+      "description": str        # Description of what this preset is for
+  }
+  ```
+
+**Example:**
+
+```python
+from field_presets import get_field_preset
+
+preset = get_field_preset("encumbrance")
+if preset:
+    print(f"Preset: {preset['name']}")
+    print(f"Fields: {preset['fields']}")
+```
+
+### `get_available_presets()`
+
+Get all available field presets.
+
+```python
+def get_available_presets() -> dict[str, dict[str, Any]]
+```
+
+**Returns:**
+
+- `dict[str, dict[str, Any]]`: Dictionary mapping preset names (lowercase) to preset configurations. Each value has the same structure as returned by `get_field_preset()`.
+
+**Example:**
+
+```python
+from field_presets import get_available_presets
+
+all_presets = get_available_presets()
+for preset_name, preset_config in all_presets.items():
+    print(f"{preset_name}: {preset_config['name']}")
+```
+
+### `register_field_preset()`
+
+Register a new field preset or update an existing one.
+
+```python
+def register_field_preset(
+    preset_name: str,
+    fields: list[str],
+    required_fields: list[str] | None = None,
+    name: str | None = None,
+    description: str = ""
+) -> None
+```
+
+**Parameters:**
+
+- `preset_name` (str): Unique identifier for the preset (case-insensitive). Used as the key to retrieve the preset.
+- `fields` (list[str]): List of field names to extract. These are the columns that will be searched for in the PDF.
+- `required_fields` (list[str] | None): Optional list of fields that must have values for a row to be considered valid. Default: empty list.
+- `name` (str | None): Optional display name for the preset. If not provided, uses `preset_name`. Default: None.
+- `description` (str): Optional description of what this preset is for. Default: empty string.
+
+**Example:**
+
+```python
+from field_presets import register_field_preset
+
+register_field_preset(
+    preset_name="invoice",
+    fields=["Invoice Number", "Date", "Vendor", "Amount", "Tax", "Total"],
+    required_fields=["Invoice Number", "Amount"],
+    name="Invoice Document",
+    description="Standard fields for invoice extraction"
+)
+```
+
+### `get_preset_fields()`
+
+Get the field list for a preset.
+
+```python
+def get_preset_fields(preset_name: str) -> list[str] | None
+```
+
+**Parameters:**
+
+- `preset_name` (str): Name of the preset (case-insensitive)
+
+**Returns:**
+
+- `list[str] | None`: List of field names, or None if preset not found
+
+**Example:**
+
+```python
+from field_presets import get_preset_fields
+
+fields = get_preset_fields("encumbrance")
+# Returns: ["Sr.No", "Document No.& Year", "Name of Executant(s)", ...]
+```
+
+### `get_preset_required_fields()`
+
+Get the required fields list for a preset.
+
+```python
+def get_preset_required_fields(preset_name: str) -> list[str] | None
+```
+
+**Parameters:**
+
+- `preset_name` (str): Name of the preset (case-insensitive)
+
+**Returns:**
+
+- `list[str] | None`: List of required field names, or None if preset not found
+
+**Example:**
+
+```python
+from field_presets import get_preset_required_fields
+
+required = get_preset_required_fields("encumbrance")
+# Returns: ["Plot No."]
+```
+
+### `list_preset_names()`
+
+Get list of all available preset names.
+
+```python
+def list_preset_names() -> list[str]
+```
+
+**Returns:**
+
+- `list[str]`: List of preset names (lowercase keys)
+
+**Example:**
+
+```python
+from field_presets import list_preset_names
+
+names = list_preset_names()
+# Returns: ["encumbrance", "invoice", "receipt", ...]
+```
+
+### `preset_exists()`
+
+Check if a preset exists.
+
+```python
+def preset_exists(preset_name: str) -> bool
+```
+
+**Parameters:**
+
+- `preset_name` (str): Name of the preset to check (case-insensitive)
+
+**Returns:**
+
+- `bool`: True if preset exists, False otherwise
+
+**Example:**
+
+```python
+from field_presets import preset_exists
+
+if preset_exists("invoice"):
+    print("Invoice preset is available")
+```
+
+### Integration with `utils.get_default_fields()`
+
+The `get_default_fields()` function in `utils.py` uses presets to return field lists:
+
+```python
+from utils import get_default_fields
+
+# Get default fields from a preset (includes 'filename' automatically)
+fields = get_default_fields("encumbrance")
+# Returns: ["filename", "Sr.No", "Document No.& Year", ...]
+```
 
 ---
 

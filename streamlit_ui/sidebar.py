@@ -38,6 +38,7 @@ def render_sidebar() -> dict:
         - hf_model: Selected HuggingFace model (if applicable)
         - use_cpu_mode: Whether to force CPU mode
         - use_pretty_output: Whether to use formatted output
+        - use_gpu_easyocr: Whether to use GPU for EasyOCR
         - api_keys: Dictionary of API keys
         - auto_detect_fields: Whether to auto-detect fields
         - use_custom_fields: Whether to use only custom fields
@@ -53,9 +54,9 @@ def render_sidebar() -> dict:
         # Define methods with tooltips/descriptions and extraction types
         method_descriptions = {
             "EasyOCR": (
-                "Fast CPU-based OCR using EasyOCR library. "
+                "Fast OCR using EasyOCR library. "
                 "Lightweight (~100MB models), quick setup, good for simple text extraction. "
-                "No API key needed."
+                "Supports CPU and GPU acceleration. No API key needed."
             ),
             "PyTesseract": (
                 "Google's Tesseract OCR engine via PyTesseract. "
@@ -90,7 +91,7 @@ def render_sidebar() -> dict:
 
         # Define extraction types for each method (shown in dropdown)
         method_types = {
-            "EasyOCR": "CPU OCR",
+            "EasyOCR": "OCR",
             "PyTesseract": "OCR",
             "Local Model": "Local OCR",
             "HuggingFace": "Cloud OCR",
@@ -142,6 +143,29 @@ def render_sidebar() -> dict:
         local_model = None
         use_cpu_mode = False
         use_pretty_output = False
+        use_gpu_easyocr = False
+
+        # EasyOCR GPU Option
+        if ocr_method == "EasyOCR":
+            st.markdown("---")
+            st.subheader("⚙️ EasyOCR Configuration")
+            use_gpu_easyocr = st.checkbox(
+                "Use GPU Acceleration",
+                value=False,
+                help="Use GPU acceleration if available (faster but requires CUDA-capable GPU)",
+            )
+            if use_gpu_easyocr:
+                # Check GPU availability
+                try:
+                    import torch
+                    if torch.cuda.is_available():
+                        st.success("✅ GPU detected - will use GPU acceleration")
+                    else:
+                        st.warning("⚠️ GPU requested but not available - will use CPU")
+                        use_gpu_easyocr = False
+                except ImportError:
+                    st.warning("⚠️ PyTorch not available - GPU check skipped, will use CPU")
+                    use_gpu_easyocr = False
 
         if ocr_method == "Local Model":
             st.markdown("---")
@@ -1028,6 +1052,7 @@ def render_sidebar() -> dict:
         "hf_model": hf_model,
         "use_cpu_mode": use_cpu_mode,
         "use_pretty_output": use_pretty_output,
+        "use_gpu_easyocr": use_gpu_easyocr,
         "api_keys": {
             "huggingface": hf_api_key
             or st.session_state.api_keys.get("huggingface", ""),

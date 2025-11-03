@@ -23,7 +23,38 @@ PRESETS: dict[str, dict[str, Any]] = {
         ],
         "required_fields": ["Plot No."],
         "description": "Standard fields for Tamil Nadu Encumbrance Certificates",
-    }
+    },
+    "invoice": {
+        "name": "Invoice Document",
+        "fields": [
+            "Invoice Number",
+            "Date",
+            "Vendor",
+            "Bill To",
+            "Amount",
+            "Tax",
+            "Total",
+            "Due Date",
+            "Payment Terms",
+        ],
+        "required_fields": ["Invoice Number", "Amount"],
+        "description": "Standard fields for invoice extraction",
+    },
+    "receipt": {
+        "name": "Receipt Document",
+        "fields": [
+            "Receipt Number",
+            "Date",
+            "Merchant",
+            "Items",
+            "Quantity",
+            "Unit Price",
+            "Total Amount",
+            "Payment Method",
+        ],
+        "required_fields": ["Receipt Number"],
+        "description": "Standard fields for receipt extraction",
+    },
 }
 
 

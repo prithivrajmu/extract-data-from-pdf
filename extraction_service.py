@@ -148,19 +148,22 @@ def extract_with_pytesseract(pdf_path: str) -> list[dict[str, str]]:
     return normalized_rows
 
 
-def extract_with_easyocr(pdf_path: str) -> list[dict[str, str]]:
+def extract_with_easyocr(
+    pdf_path: str, use_gpu: bool = False
+) -> list[dict[str, str]]:
     """
     Extract data using EasyOCR.
 
     Args:
         pdf_path: Path to PDF file
+        use_gpu: If True, use GPU acceleration (if available). Default: False (CPU mode).
 
     Returns:
         List of extracted row dictionaries
     """
     from extract_ec_data_easyocr import extract_data_from_pdf
 
-    rows = extract_data_from_pdf(pdf_path)
+    rows = extract_data_from_pdf(pdf_path, use_gpu=use_gpu)
 
     # Normalize field names to match standard format
     normalized_rows = []
@@ -317,9 +320,10 @@ def extract_data(
         custom_fields: Optional list of custom field names to extract.
             Only supported by AI methods (Gemini, Deepseek).
             Example: ['Village Name', 'Registration Date', 'Property Type']
-        local_model_options: Optional dictionary with local model configuration:
-            - 'use_cpu': Force CPU mode even if GPU available (bool)
-            - 'use_pretty': Use formatted output for Chandra (bool)
+        local_model_options: Optional dictionary with extraction method configuration:
+            - 'use_cpu': Force CPU mode even if GPU available (bool) - for local models
+            - 'use_pretty': Use formatted output for Chandra (bool) - for local models
+            - 'use_gpu': Use GPU acceleration if available (bool) - for EasyOCR and local models
         auto_detect_fields: If True, automatically detect field names from PDF
             before extraction. Works best with AI methods.
         detected_fields: Pre-detected field names list. Used when
@@ -407,8 +411,10 @@ def extract_data(
         return extract_with_pytesseract(pdf_path)
 
     elif method == "easyocr":
-        # EasyOCR doesn't support custom fields dynamically, returns all fields
-        return extract_with_easyocr(pdf_path)
+        # EasyOCR supports GPU acceleration
+        options = local_model_options or {}
+        use_gpu = options.get("use_gpu", False)
+        return extract_with_easyocr(pdf_path, use_gpu=use_gpu)
 
     elif method == "huggingface" or method == "hf":
         api_key = api_keys.get("huggingface") or api_keys.get("hf")
