@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from extraction_service import extract_data
+from extraction_service import extract_data, extract_with_local_model
 
 
 class TestExtractData:
@@ -132,3 +132,69 @@ class TestExtractDataMethodRouting:
             )
 
             mock_func.assert_called_once()
+
+
+class TestExtractWithLocalModel:
+    """Tests for extract_with_local_model helper."""
+
+    @patch("model_loaders.get_model_loader")
+    @patch("model_loaders.is_model_supported", return_value=(True, ""))
+    @patch("extract_ec_data_pretty.extract_data_from_pdf")
+    def test_chandra_pretty_path(
+        self,
+        mock_chandra_extract,
+        mock_is_supported,
+        mock_get_loader,
+    ):
+        """Ensure Chandra pretty flag routes to pretty extractor."""
+
+        mock_get_loader.return_value = (None, "chandra_cli")
+        mock_chandra_extract.return_value = [
+            {"Plot No": "101/1", "Survey No./": "42/9"}
+        ]
+
+        rows = extract_with_local_model(
+            "sample.pdf",
+            model_name="datalab-to/chandra",
+            use_pretty=True,
+        )
+
+        mock_is_supported.assert_called_once()
+        mock_get_loader.assert_called_once()
+        mock_chandra_extract.assert_called_once_with("sample.pdf")
+
+        assert rows[0]["Plot No."] == "101/1"
+        assert rows[0]["Survey No."] == "42/9"
+
+    @patch("extract_ec_data_easyocr.parse_table_rows")
+    @patch("model_loaders.get_model_loader")
+    @patch("model_loaders.is_model_supported", return_value=(True, ""))
+    def test_transformers_structured_data(
+        self,
+        mock_is_supported,
+        mock_get_loader,
+        mock_parse_table_rows,
+    ):
+        """Structured output is preferred over text parsing when available."""
+
+        calls = []
+
+        def fake_loader(model_name, pdf_path, use_cpu):
+            calls.append((model_name, pdf_path, use_cpu))
+            structured = [{"Plot No": "55/2", "Survey No": "88/1"}]
+            return "", structured
+
+        mock_get_loader.return_value = (fake_loader, "transformers")
+        mock_parse_table_rows.return_value = []
+
+        rows = extract_with_local_model(
+            "doc.pdf",
+            model_name="microsoft/trocr-base-printed",
+            use_cpu=True,
+            use_pretty=True,
+        )
+
+        assert calls == [("microsoft/trocr-base-printed", "doc.pdf", True)]
+        mock_parse_table_rows.assert_not_called()
+        assert rows[0]["filename"] == "doc.pdf"
+        assert rows[0]["Plot No."] == "55/2"

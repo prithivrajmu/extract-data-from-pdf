@@ -26,18 +26,34 @@ except ImportError:
     )
 
 
-def extract_text_from_pdf_easyocr(pdf_path: str) -> str:
+def extract_text_from_pdf_easyocr(pdf_path: str, use_gpu: bool = False) -> str:
     """
-    Extract text from PDF using EasyOCR (fast CPU mode).
+    Extract text from PDF using EasyOCR.
 
     Args:
         pdf_path: Path to the PDF file
+        use_gpu: If True, use GPU acceleration (if available). Default: False (CPU mode).
 
     Returns:
         Extracted text from all pages
     """
     print(f"📄 Processing PDF: {os.path.basename(pdf_path)}")
-    print("🔧 Using EasyOCR (Fast CPU mode)")
+    
+    # Check GPU availability
+    gpu_available = False
+    if use_gpu:
+        try:
+            import torch
+            gpu_available = torch.cuda.is_available()
+        except ImportError:
+            pass
+    
+    if use_gpu and gpu_available:
+        print("🔧 Using EasyOCR (GPU mode)")
+    else:
+        print("🔧 Using EasyOCR (CPU mode)")
+        if use_gpu and not gpu_available:
+            print("   ⚠️  GPU requested but not available - using CPU")
     print()
 
     try:
@@ -51,7 +67,7 @@ def extract_text_from_pdf_easyocr(pdf_path: str) -> str:
         print("📥 Initializing EasyOCR...")
         print("   (First run downloads models - one time only)")
         start_init = time.time()
-        reader = easyocr.Reader(["en"], gpu=False)  # Force CPU mode
+        reader = easyocr.Reader(["en"], gpu=(use_gpu and gpu_available))
         init_time = time.time() - start_init
         print(f"   ✓ EasyOCR ready ({init_time:.1f}s)")
         print()
@@ -577,12 +593,20 @@ def parse_table_rows(text: str) -> list[dict[str, str]]:
     return rows
 
 
-def extract_data_from_pdf(pdf_path: str) -> list[dict[str, str]]:
-    """Main function to extract data from a PDF file."""
+def extract_data_from_pdf(pdf_path: str, use_gpu: bool = False) -> list[dict[str, str]]:
+    """Main function to extract data from a PDF file.
+    
+    Args:
+        pdf_path: Path to the PDF file
+        use_gpu: If True, use GPU acceleration (if available). Default: False (CPU mode).
+    
+    Returns:
+        List of extracted row dictionaries
+    """
     filename = os.path.basename(pdf_path)
 
     # Extract text using EasyOCR
-    text = extract_text_from_pdf_easyocr(pdf_path)
+    text = extract_text_from_pdf_easyocr(pdf_path, use_gpu=use_gpu)
 
     # Save OCR text for debugging
     debug_file = pdf_path.replace(".pdf", "_ocr_text.txt")

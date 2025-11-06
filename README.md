@@ -67,7 +67,7 @@ The easiest way to use this tool is through the Streamlit web interface.
 📄 **Multiple Extraction Methods:**
 - **EasyOCR** - Fast CPU-based OCR, lightweight (~100MB models), quick setup, no API key needed
 - **PyTesseract** - Google's Tesseract OCR engine, fast and lightweight for text-based PDFs
-- **Local Model** - Download and run Chandra OCR locally, high accuracy, supports GPU/CPU
+- **Local Model** - Run Chandra or other Hugging Face OCR models locally with automatic CPU/GPU capability detection
 - **HuggingFace** - Cloud-based OCR via Inference API, requires API key
 - **Datalab API** - High-accuracy OCR via API, best for structured documents (recommended)
 - **Gemini AI** - Google's AI-powered extraction with context understanding and custom fields
@@ -98,7 +98,8 @@ The easiest way to use this tool is through the Streamlit web interface.
 ### Using the Streamlit App
 
 1. **Configure Extraction Method:**
-   - Select from: EasyOCR, HuggingFace, Datalab API, Gemini AI, or Deepseek AI
+   - Select from: EasyOCR, Local Model, HuggingFace, Datalab API, Gemini AI, or Deepseek AI
+   - For Local Model: Pick a local OCR model (Chandra, TrOCR, etc.) and toggle `Force CPU` / `Formatted Output` based on the detected capabilities
    - For HuggingFace: Enter model name (default: `datalab-to/chandra`)
    - For API methods: Enter and test your API keys
 
@@ -170,6 +171,12 @@ python examples/extract_ec_data.py      # Auto-detects GPU if available
 python examples/extract_ec_data.py --file path/to/your/file.pdf
 ```
 
+**CPU/GPU Selection:**
+- Local Model supports GPU acceleration (10-20x faster than CPU)
+- GPU is automatically detected and used if available
+- In Streamlit UI: Select "Local Model" and toggle "Force CPU Mode" if needed
+- CPU mode is slower but more stable and doesn't require GPU drivers
+
 ### Option 2: Using Datalab API (No Local Model Required)
 
 Uses Datalab Marker API - no need to download models locally!
@@ -236,9 +243,9 @@ If you encounter errors, use Option 2 (Datalab API) instead.
 
 ---
 
-## 📋 Default Extracted Fields
+## 📋 Field Presets and Custom Fields
 
-The following fields are extracted by default:
+The system now supports **field presets** for common document types. By default, the **Encumbrance Certificate** preset is used, which extracts:
 
 - `filename` - Source PDF filename
 - `Sr.No` - Serial number
@@ -248,7 +255,45 @@ The following fields are extracted by default:
 - `Survey No.` - Survey number
 - `Plot No.` - Plot number (required field)
 
-**Note:** You can define custom fields in the Streamlit app when using AI-based extraction methods (Gemini, Deepseek).
+### Using Presets
+
+**Available Presets:**
+- **Encumbrance Certificate** (default) - For Tamil Nadu Encumbrance Certificates
+- **Invoice Document** - For invoice extraction (Invoice Number, Date, Vendor, Amount, Tax, Total, etc.)
+- **Receipt Document** - For receipt extraction (Receipt Number, Date, Merchant, Items, Total Amount, etc.)
+
+**In Streamlit UI:**
+- Select a preset from the "Field Preset" dropdown in the sidebar
+- Each preset includes predefined fields optimized for that document type
+- You can also create custom fields for any document type
+
+**Programmatically:**
+```python
+from field_presets import get_preset_fields, get_field_preset, register_field_preset
+from utils import get_default_fields
+
+# Get fields from a preset
+fields = get_preset_fields("encumbrance")  # Returns list of field names
+
+# Get full preset configuration
+preset = get_field_preset("invoice")  # Returns dict with fields, required_fields, etc.
+
+# Use preset-aware default fields
+fields = get_default_fields("encumbrance")  # Includes 'filename' automatically
+
+# Register your own custom preset
+register_field_preset(
+    preset_name="my_document",
+    fields=["Field1", "Field2", "Field3"],
+    required_fields=["Field1"],
+    name="My Custom Document",
+    description="Custom fields for my document type"
+)
+```
+
+### Custom Fields
+
+You can define custom fields in the Streamlit app or via the API for any document type. Custom fields work best with AI-based extraction methods (Gemini, Deepseek). See the [API documentation](API.md#field_presets) for details on registering your own presets.
 
 ---
 

@@ -29,94 +29,37 @@ def setup_deepseek_client(api_key: str, base_url: str = "https://api.deepseek.co
     return api_key, base_url
 
 
-def create_extraction_prompt() -> str:
+def create_extraction_prompt(preset_name: str = "encumbrance") -> str:
     """
-    Create the prompt for extracting EC data from PDF.
-    Similar to Gemini prompt structure.
+    Create the prompt for extracting data from PDF using preset or custom fields.
+
+    Args:
+        preset_name: Name of the preset to use (default: "encumbrance")
 
     Returns:
         Prompt string for Deepseek AI
     """
-    prompt = """Extract data from this EC (Encumbrance Certificate) document.
+    from prompt_utils import create_custom_extraction_prompt
 
-TASK: Identify table columns and extract rows where Plot Number has a value.
-
-REQUIREMENTS:
-1. Find all table rows in the document
-2. Identify columns automatically (headers may vary in spelling/format/language)
-3. Extract these fields: Serial Number, Document Number & Year, Executant Name(s), Claimant Name(s), Survey Number, Plot Number
-4. ONLY include rows where Plot Number field has a value (not empty)
-5. Other fields can be empty if not found
-
-RETURN FORMAT: Valid JSON array only, no extra text.
-
-JSON Structure:
-- Each object must have these keys: "Sr.No", "Document No.& Year", "Name of Executant(s)", "Name of Claimant(s)", "Survey No.", "Plot No."
-- Use empty string "" for missing fields
-- Preserve exact text including Tamil/regional characters
-- Use \\n for line breaks within fields
-
-Example:
-[
-  {"Sr.No": "1", "Document No.& Year": "1439/2005", "Name of Executant(s)": "Name1", "Name of Claimant(s)": "Name2", "Survey No.": "103/3", "Plot No.": "18"},
-  {"Sr.No": "2", "Document No.& Year": "", "Name of Executant(s)": "", "Name of Claimant(s)": "Name3", "Survey No.": "", "Plot No.": "20"}
-]
-
-Return ONLY the JSON array, nothing else."""
-    return prompt
+    # Use preset-aware prompt generation
+    return create_custom_extraction_prompt(custom_fields=None, preset_name=preset_name)
 
 
-def create_lenient_extraction_prompt() -> str:
+def create_lenient_extraction_prompt(preset_name: str = "encumbrance") -> str:
     """
-    Create a more lenient prompt for extracting EC data.
+    Create a more lenient prompt for extracting data when initial extraction returns no rows.
+    Uses preset-aware prompt generation.
+
+    Args:
+        preset_name: Name of the preset to use (default: "encumbrance")
 
     Returns:
         Lenient prompt string for Deepseek AI
     """
-    prompt = """You are an expert at extracting structured data from EC (Encumbrance Certificate) documents.
+    from prompt_utils import create_lenient_custom_prompt
 
-This is a SECOND PASS with more lenient rules. Extract rows even if one or two fields are missing, BUT Plot Number field MUST be present and filled.
-
-Analyze the PDF document and extract table rows. Use fuzzy matching to identify
-columns/fields - headers may have variations in spelling, spacing, punctuation, or language.
-
-ONLY extract rows where the Plot Number field has a value (is NOT empty). This is REQUIRED - Plot Number must be present.
-
-Use fuzzy matching to identify these fields in the table:
-1. Serial Number / Sr.No / Sr. No. / Sr No / Serial No - Look for serial number column (usually first column, numeric)
-2. Document No.& Year / Document Number / Document No / Doc No / Document - Look for document number and year column
-3. Name of Executant(s) / Executant / Executants / Name of Executant - Look for executant names column
-4. Name of Claimant(s) / Claimant / Claimants / Name of Claimant - Look for claimant names column
-5. Survey No. / Survey No / Survey Number / Survey - Look for survey number column
-6. Plot No. / Plot No / Plot Number / Plot / Plot No./ - Look for plot number column (MANDATORY - only include rows where this has a value)
-
-LENIENT EXTRACTION RULES (Second Pass):
-- Extract rows even if 1-2 fields are missing (e.g., Serial No, Document No., Executant, Claimant, or Survey No. can be missing)
-- BUT Plot Number field is MANDATORY - DO NOT include rows without Plot Number
-- If a row has Plot Number but is missing other fields, STILL include it and use empty string "" for missing fields
-- Use intelligent fuzzy matching to map table columns to these 6 fields
-- Be more flexible - if a field name doesn't match exactly, try to find similar columns
-- Preserve the exact text as it appears in the document, including Tamil/regional language characters
-- If a field contains newlines or multiple items, preserve them as-is (use \n for newlines in JSON strings)
-- Extract data exactly as it appears - do not modify or summarize
-- Return the data as a JSON array of objects
-- Each object MUST have these exact keys: "Sr.No", "Document No.& Year", "Name of Executant(s)", "Name of Claimant(s)", "Survey No.", "Plot No."
-- If any field is missing or cannot be found (except Plot No. which is required), use an empty string "" for that field
-
-Return ONLY valid JSON array, no additional text, no explanations, no markdown code blocks. The format should be:
-[
-  {
-    "Sr.No": "1",
-    "Document No.& Year": "",
-    "Name of Executant(s)": "",
-    "Name of Claimant(s)": "1. ரகுராமன்",
-    "Survey No.": "",
-    "Plot No.": "18"
-  },
-  ...
-]
-"""
-    return prompt
+    # Use preset-aware lenient prompt generation
+    return create_lenient_custom_prompt(custom_fields=None, preset_name=preset_name)
 
 
 def parse_json_response(response_text: str) -> list[dict]:
@@ -375,27 +318,21 @@ def extract_data_from_pdf_deepseek(
             for field in custom_fields:
                 formatted_row[field] = str(row.get(field, "")).strip()
         else:
-            # Use default fields
-            formatted_row.update(
-                {
-                    "Sr.No": str(row.get("Sr.No", "")).strip(),
-                    "Document No.& Year": str(
-                        row.get("Document No.& Year", "")
-                    ).strip(),
-                    "Name of Executant(s)": str(
-                        row.get("Name of Executant(s)", "")
-                    ).strip(),
-                    "Name of Claimant(s)": str(
-                        row.get("Name of Claimant(s)", "")
-                    ).strip(),
-                    "Survey No.": str(
-                        row.get("Survey No.", row.get("Survey No./", ""))
-                    ).strip(),
-                    "Plot No.": str(
-                        row.get("Plot No.", row.get("Plot No./", ""))
-                    ).strip(),
-                }
-            )
+            # Use preset fields (encumbrance by default)
+            from field_presets import get_preset_fields
+
+            preset_fields = get_preset_fields("encumbrance") or [
+                "Sr.No",
+                "Document No.& Year",
+                "Name of Executant(s)",
+                "Name of Claimant(s)",
+                "Survey No.",
+                "Plot No.",
+            ]
+            for field in preset_fields:
+                # Handle field name variations (e.g., "Plot No./" -> "Plot No.")
+                value = row.get(field, row.get(f"{field}/", "")).strip()
+                formatted_row[field] = str(value).strip()
 
         # Only include rows with at least one non-empty field (besides filename)
         non_empty_fields = [
@@ -454,26 +391,20 @@ def extract_data_from_pdf_deepseek(
                     for field in custom_fields:
                         formatted_row[field] = str(row.get(field, "")).strip()
                 else:
-                    formatted_row.update(
-                        {
-                            "Sr.No": str(row.get("Sr.No", "")).strip(),
-                            "Document No.& Year": str(
-                                row.get("Document No.& Year", "")
-                            ).strip(),
-                            "Name of Executant(s)": str(
-                                row.get("Name of Executant(s)", "")
-                            ).strip(),
-                            "Name of Claimant(s)": str(
-                                row.get("Name of Claimant(s)", "")
-                            ).strip(),
-                            "Survey No.": str(
-                                row.get("Survey No.", row.get("Survey No./", ""))
-                            ).strip(),
-                            "Plot No.": str(
-                                row.get("Plot No.", row.get("Plot No./", ""))
-                            ).strip(),
-                        }
-                    )
+                    # Use preset fields for lenient extraction too
+                    from field_presets import get_preset_fields
+
+                    preset_fields = get_preset_fields("encumbrance") or [
+                        "Sr.No",
+                        "Document No.& Year",
+                        "Name of Executant(s)",
+                        "Name of Claimant(s)",
+                        "Survey No.",
+                        "Plot No.",
+                    ]
+                    for field in preset_fields:
+                        value = row.get(field, row.get(f"{field}/", "")).strip()
+                        formatted_row[field] = str(value).strip()
 
                 # Only include rows with at least one non-empty field
                 non_empty_fields = [

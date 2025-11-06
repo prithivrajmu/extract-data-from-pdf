@@ -33,6 +33,7 @@ import time
 from typing import Any
 
 from logging_config import get_logger
+from model_loaders import get_model_capabilities
 
 logger = get_logger(__name__)
 
@@ -40,6 +41,7 @@ logger = get_logger(__name__)
 def create_field_detection_prompt() -> str:
     """
     Create prompt for detecting fields/columns from PDF table headers.
+    Uses generic example to avoid biasing detection toward specific document types.
 
     Returns:
         Prompt string for AI field detection
@@ -56,10 +58,10 @@ INSTRUCTIONS:
 
 RETURN FORMAT: Valid JSON array of strings only, no explanations, no markdown.
 
-Example output format:
-["Sr.No", "Document No.& Year", "Name of Executant(s)", "Name of Claimant(s)", "Survey No.", "Plot No."]
+Example output format (generic example - use actual column names from the document):
+["Column 1", "Column 2", "Column 3"]
 
-Return ONLY the JSON array of field names."""
+Return ONLY the JSON array of field names as they appear in the document."""
     return prompt
 
 
@@ -332,7 +334,7 @@ def detect_fields_with_ocr(pdf_path: str, ocr_method: str = "chandra") -> list[s
 
     Args:
         pdf_path: Path to PDF file
-        ocr_method: OCR method to use ('chandra', 'easyocr', 'pytesseract')
+        ocr_method: OCR method or model identifier
 
     Returns:
         List of detected field names
@@ -340,10 +342,32 @@ def detect_fields_with_ocr(pdf_path: str, ocr_method: str = "chandra") -> list[s
     if not os.path.exists(pdf_path):
         raise FileNotFoundError(f"PDF file not found: {pdf_path}")
 
+    # Map friendly/local identifiers to concrete OCR implementations
+    normalized_method = ocr_method.lower()
+    supported_methods = {"chandra", "easyocr", "pytesseract"}
+
+    if normalized_method in {"local", "local_model"}:
+        normalized_method = "chandra"
+    elif normalized_method not in supported_methods:
+        capabilities = get_model_capabilities(ocr_method)
+        mapped_method = capabilities.get("field_detection_method")
+        if mapped_method in supported_methods:
+            normalized_method = mapped_method
+            logger.debug(
+                "Field detection mapped model %s to %s",
+                ocr_method,
+                mapped_method,
+            )
+        else:
+            normalized_method = "pytesseract"
+            logger.debug(
+                "Field detection fallback to PyTesseract for model %s", ocr_method
+            )
+
     # Extract text using OCR
     text = None
 
-    if ocr_method == "chandra":
+    if normalized_method == "chandra":
         try:
             from extract_ec_data import extract_text_from_pdf
         except ImportError:
@@ -353,13 +377,13 @@ def detect_fields_with_ocr(pdf_path: str, ocr_method: str = "chandra") -> list[s
             text = result[0]
         else:
             text = result
-    elif ocr_method == "easyocr":
+    elif normalized_method == "easyocr":
         try:
             from extract_ec_data_easyocr import extract_text_from_pdf_easyocr
         except ImportError:
             from examples.extract_ec_data_easyocr import extract_text_from_pdf_easyocr
         text = extract_text_from_pdf_easyocr(pdf_path)
-    elif ocr_method == "pytesseract":
+    else:  # normalized_method == "pytesseract"
         try:
             from extract_ec_data_pytesseract import extract_text_from_pdf_pytesseract
         except ImportError:
@@ -367,8 +391,6 @@ def detect_fields_with_ocr(pdf_path: str, ocr_method: str = "chandra") -> list[s
                 extract_text_from_pdf_pytesseract,
             )
         text = extract_text_from_pdf_pytesseract(pdf_path)
-    else:
-        raise ValueError(f"Unsupported OCR method: {ocr_method}")
 
     if not text:
         return []
@@ -463,6 +485,7 @@ def _parse_headers_from_ocr_text(text: str) -> list[str]:
 def normalize_field_names(fields: list[str]) -> list[str]:
     """
     Normalize field names to standard formats.
+    Only normalizes known field variations (e.g., EC fields), preserves others as-is.
 
     Args:
         fields: List of field names
@@ -473,7 +496,8 @@ def normalize_field_names(fields: list[str]) -> list[str]:
     normalized = []
     seen = set()
 
-    # Mapping of variations to standard names
+    # Mapping of variations to standard names (primarily for encumbrance preset compatibility)
+    # These mappings help normalize common variations while preserving other field names
     field_mappings = {
         "sr.no": "Sr.No",
         "sr no": "Sr.No",
@@ -511,8 +535,11 @@ def normalize_field_names(fields: list[str]) -> list[str]:
         if field_lower in field_mappings:
             normalized_field = field_mappings[field_lower]
         else:
-            # Try fuzzy matching
+            # Try fuzzy matching for known fields
             normalized_field = _fuzzy_match_field(field, field_mappings)
+            # If no match found, preserve original field name (for non-EC fields)
+            if not normalized_field:
+                normalized_field = field
 
         # Avoid duplicates
         if normalized_field and normalized_field not in seen:

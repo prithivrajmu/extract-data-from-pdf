@@ -7,7 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- _Nothing yet._
+### Added
+
+- Field preset system for common document types
+- Encumbrance Certificate preset (default)
+- Preset selection in Streamlit UI
+- Generic field detection (removed EC-specific bias)
+- Support for customizable field extraction
+- Additional presets: Invoice, Receipt, and more
+- Unit tests for preset system
+- Performance benchmarking utilities
+- Capability detection for local OCR models (CPU/GPU, pretty output hints)
+- Unit tests covering Chandra and transformer-based local extraction paths
+
+### Changed
+
+- Field detection now uses generic examples instead of EC-specific examples
+- Extraction prompts now support presets and custom fields
+- Default fields now come from preset system
+- `get_default_fields()` now accepts `preset_name` parameter
+- Streamlit sidebar exposes local model options based on detected capabilities
+- Field detection automatically maps local model identifiers to supported OCR engines
+
+### Migration Notes
+
+- Existing code continues to work (defaults to "encumbrance" preset)
+- Field detection is now more general and unbiased
+- Users can continue using `get_default_fields()` without changes; preset-aware version available with parameter
 
 ## [1.1.0] - 2025-11-02
 

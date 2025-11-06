@@ -17,12 +17,14 @@ from model_info import (
     get_local_ocr_models,
     get_model_search_url,
 )
+from model_loaders import get_model_capabilities
 from test_api_keys import (
     test_datalab_api_key,
     test_deepseek_api_key,
     test_gemini_api_key,
     test_huggingface_api_key,
 )
+from field_presets import get_available_presets, get_preset_fields
 from utils import get_default_fields, get_field_descriptions
 
 
@@ -37,6 +39,7 @@ def render_sidebar() -> dict:
         - hf_model: Selected HuggingFace model (if applicable)
         - use_cpu_mode: Whether to force CPU mode
         - use_pretty_output: Whether to use formatted output
+        - use_gpu_easyocr: Whether to use GPU for EasyOCR
         - api_keys: Dictionary of API keys
         - auto_detect_fields: Whether to auto-detect fields
         - use_custom_fields: Whether to use only custom fields
@@ -52,9 +55,9 @@ def render_sidebar() -> dict:
         # Define methods with tooltips/descriptions and extraction types
         method_descriptions = {
             "EasyOCR": (
-                "Fast CPU-based OCR using EasyOCR library. "
+                "Fast OCR using EasyOCR library. "
                 "Lightweight (~100MB models), quick setup, good for simple text extraction. "
-                "No API key needed."
+                "Supports CPU and GPU acceleration. No API key needed."
             ),
             "PyTesseract": (
                 "Google's Tesseract OCR engine via PyTesseract. "
@@ -62,7 +65,7 @@ def render_sidebar() -> dict:
                 "Requires Tesseract-OCR installed on system."
             ),
             "Local Model": (
-                "Download and run OCR models locally (Chandra OCR). "
+                "Download and run OCR models locally (example: Chandra OCR). "
                 "High accuracy for documents/tables. First run downloads ~2GB models. "
                 "Supports GPU/CPU."
             ),
@@ -89,7 +92,7 @@ def render_sidebar() -> dict:
 
         # Define extraction types for each method (shown in dropdown)
         method_types = {
-            "EasyOCR": "CPU OCR",
+            "EasyOCR": "OCR",
             "PyTesseract": "OCR",
             "Local Model": "Local OCR",
             "HuggingFace": "Cloud OCR",
@@ -141,6 +144,29 @@ def render_sidebar() -> dict:
         local_model = None
         use_cpu_mode = False
         use_pretty_output = False
+        use_gpu_easyocr = False
+
+        # EasyOCR GPU Option
+        if ocr_method == "EasyOCR":
+            st.markdown("---")
+            st.subheader("⚙️ EasyOCR Configuration")
+            use_gpu_easyocr = st.checkbox(
+                "Use GPU Acceleration",
+                value=False,
+                help="Use GPU acceleration if available (faster but requires CUDA-capable GPU)",
+            )
+            if use_gpu_easyocr:
+                # Check GPU availability
+                try:
+                    import torch
+                    if torch.cuda.is_available():
+                        st.success("✅ GPU detected - will use GPU acceleration")
+                    else:
+                        st.warning("⚠️ GPU requested but not available - will use CPU")
+                        use_gpu_easyocr = False
+                except ImportError:
+                    st.warning("⚠️ PyTorch not available - GPU check skipped, will use CPU")
+                    use_gpu_easyocr = False
 
         if ocr_method == "Local Model":
             st.markdown("---")
@@ -255,18 +281,45 @@ def render_sidebar() -> dict:
                     "✅ Using HuggingFace API key - models are fetched automatically"
                 )
 
-            # Options for Chandra model
-            if local_model == "datalab-to/chandra":
+            # Model-specific configuration
+            capabilities = get_model_capabilities(local_model)
+
+            st.markdown("---")
+            st.subheader("⚙️ Local Model Options")
+
+            if capabilities.get("supports_cpu_mode", True):
                 use_cpu_mode = st.checkbox(
                     "Force CPU Mode",
-                    value=False,
+                    value=st.session_state.get("local_use_cpu_mode", False),
                     help="Force CPU usage even if GPU is available (slower but more stable)",
+                    key="local_use_cpu_mode",
                 )
+            else:
+                use_cpu_mode = False
+                st.session_state["local_use_cpu_mode"] = False
+                st.info("CPU fallback is not available for this model.")
+
+            if capabilities.get("supports_pretty_output", False):
                 use_pretty_output = st.checkbox(
                     "Use Formatted Output",
-                    value=False,
+                    value=st.session_state.get("local_use_pretty_output", False),
                     help="Use human-readable output formatting (filters technical details)",
+                    key="local_use_pretty_output",
                 )
+            else:
+                use_pretty_output = False
+                st.session_state["local_use_pretty_output"] = False
+
+            recommended_dpi = capabilities.get("recommended_dpi")
+            if recommended_dpi:
+                st.caption(f"Tip: Use {recommended_dpi} DPI renders for best accuracy.")
+
+            if not capabilities.get("supports_gpu", True):
+                st.caption("Note: GPU acceleration is not available for this model.")
+
+            notes = capabilities.get("notes", [])
+            for note in notes:
+                st.caption(f"Tip: {note}")
 
         # HuggingFace Model Selection
         hf_model = None
@@ -557,6 +610,31 @@ def render_sidebar() -> dict:
         st.markdown("---")
         st.subheader("📋 Field Selection")
 
+        # Preset Selection
+        if "selected_preset" not in st.session_state:
+            st.session_state.selected_preset = "encumbrance"
+
+        presets = get_available_presets()
+        preset_options = {v["name"]: k for k, v in presets.items()}
+        preset_display_names = list(preset_options.keys())
+
+        selected_preset_display = st.selectbox(
+            "Field Preset",
+            options=preset_display_names,
+            index=preset_display_names.index(
+                presets[st.session_state.selected_preset]["name"]
+            )
+            if st.session_state.selected_preset in presets
+            else 0,
+            help="Select a predefined field preset or use custom fields below.",
+        )
+        st.session_state.selected_preset = preset_options[selected_preset_display]
+
+        # Show preset description
+        selected_preset_info = presets[st.session_state.selected_preset]
+        if selected_preset_info.get("description"):
+            st.caption(f"📝 {selected_preset_info['description']}")
+
         # Auto-detect Fields Option
         auto_detect_fields = st.checkbox(
             "Auto-detect Fields",
@@ -617,8 +695,9 @@ def render_sidebar() -> dict:
             )
             st.info(f"Extracting {len(st.session_state.custom_fields)} custom field(s)")
         else:
-            # Use default fields with selection
-            default_fields = get_default_fields()
+            # Use preset fields with selection
+            preset_name = st.session_state.selected_preset
+            default_fields = get_default_fields(preset_name=preset_name)
             field_descriptions = get_field_descriptions()
 
             # Select all / Deselect all buttons
@@ -1001,6 +1080,7 @@ def render_sidebar() -> dict:
         "hf_model": hf_model,
         "use_cpu_mode": use_cpu_mode,
         "use_pretty_output": use_pretty_output,
+        "use_gpu_easyocr": use_gpu_easyocr,
         "api_keys": {
             "huggingface": hf_api_key
             or st.session_state.api_keys.get("huggingface", ""),

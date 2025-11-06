@@ -140,10 +140,15 @@ def main():
     hf_model = config["hf_model"]
     use_cpu_mode = config["use_cpu_mode"]
     use_pretty_output = config["use_pretty_output"]
+    use_gpu_easyocr = config["use_gpu_easyocr"]
     api_keys_dict = config["api_keys"]
     auto_detect_fields = config["auto_detect_fields"]
     use_custom_fields = config["use_custom_fields"]
     output_formats = config["output_formats"]
+    local_model_options = {
+        "use_cpu": use_cpu_mode,
+        "use_pretty": use_pretty_output,
+    }
     _ = config["json_format"]  # Reserved for future use
 
     # Main Content Area
@@ -419,13 +424,18 @@ def main():
                                 rows = extract_with_local_model(
                                     temp_file_path,
                                     local_model or "datalab-to/chandra",
-                                    use_cpu=use_cpu_mode,
-                                    use_pretty=use_pretty_output,
+                                use_cpu=local_model_options.get("use_cpu", False),
+                                use_pretty=local_model_options.get("use_pretty", False),
                                 )
                             else:
                                 details_text.markdown(
                                     "🔍 Extracting data from PDF (this may take 30-60 seconds)..."
                                 )
+                                # Prepare options for extraction methods
+                                extraction_options = None
+                                if selected_method == "easyocr" and use_gpu_easyocr:
+                                    extraction_options = {"use_gpu": True}
+                                
                                 rows = extract_data(
                                     temp_file_path,
                                     selected_method,
@@ -440,6 +450,7 @@ def main():
                                     detected_fields=(
                                         detected_fields if auto_detect_fields else None
                                     ),
+                                    local_model_options=extraction_options,
                                 )
 
                             all_results.extend(rows)

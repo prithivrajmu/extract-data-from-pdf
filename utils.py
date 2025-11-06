@@ -58,13 +58,16 @@ def filter_fields(data: list[dict], selected_fields: set[str]) -> list[dict]:
     return filtered_data
 
 
-def format_dataframe(df: pd.DataFrame, field_order: list[str] = None) -> pd.DataFrame:
+def format_dataframe(
+    df: pd.DataFrame, field_order: list[str] | None = None, preset_name: str = "encumbrance"
+) -> pd.DataFrame:
     """
     Format DataFrame with consistent column order.
 
     Args:
         df: Input DataFrame
-        field_order: Desired column order (filename always first)
+        field_order: Desired column order (filename always first). If None, uses preset fields.
+        preset_name: Preset to use when field_order is None (default: "encumbrance")
 
     Returns:
         Formatted DataFrame
@@ -72,17 +75,32 @@ def format_dataframe(df: pd.DataFrame, field_order: list[str] = None) -> pd.Data
     if df.empty:
         return df
 
-    # Default field order
+    # Default field order from preset
     if field_order is None:
-        field_order = [
-            "filename",
-            "Sr.No",
-            "Document No.& Year",
-            "Name of Executant(s)",
-            "Name of Claimant(s)",
-            "Survey No.",
-            "Plot No.",
-        ]
+        from field_presets import get_preset_fields
+
+        preset_fields = get_preset_fields(preset_name)
+        if preset_fields:
+            # Ensure filename is included
+            if "filename" not in preset_fields:
+                field_order = ["filename"] + preset_fields
+            else:
+                field_order = preset_fields.copy()
+                # Move filename to first if present
+                if "filename" in field_order:
+                    field_order.remove("filename")
+                    field_order.insert(0, "filename")
+        else:
+            # Fallback to encumbrance fields
+            field_order = [
+                "filename",
+                "Sr.No",
+                "Document No.& Year",
+                "Name of Executant(s)",
+                "Name of Claimant(s)",
+                "Survey No.",
+                "Plot No.",
+            ]
 
     # Ensure filename is first
     if "filename" in df.columns:
@@ -204,13 +222,28 @@ def validate_pdf_file(file) -> tuple[bool, str]:
     return True, ""
 
 
-def get_default_fields() -> list[str]:
+def get_default_fields(preset_name: str = "encumbrance") -> list[str]:
     """
-    Get list of default extraction fields.
+    Get list of default extraction fields from a preset.
+
+    Args:
+        preset_name: Name of the preset to use (default: "encumbrance")
 
     Returns:
-        List of field names
+        List of field names, including "filename" as first field
     """
+    from field_presets import get_preset_fields
+
+    preset_fields = get_preset_fields(preset_name)
+
+    # If preset exists, use its fields
+    if preset_fields:
+        # Ensure filename is included (always first)
+        if "filename" not in preset_fields:
+            return ["filename"] + preset_fields
+        return preset_fields
+
+    # Fallback to encumbrance fields for backward compatibility
     return [
         "filename",
         "Sr.No",
