@@ -39,6 +39,36 @@ logger = get_logger(__name__)
 __version__ = "1.1.0"
 
 
+def _rows_from_structured_data(
+    structured_data: Any, filename: str
+) -> list[dict[str, str]]:
+    """Best-effort conversion from structured model output to row dictionaries."""
+
+    rows: list[dict[str, str]] = []
+
+    if isinstance(structured_data, list):
+        for item in structured_data:
+            if isinstance(item, dict):
+                row = {key: str(value) for key, value in item.items()}
+                row.setdefault("filename", filename)
+                rows.append(row)
+        return rows
+
+    if isinstance(structured_data, dict):
+        candidate_keys = ("rows", "data", "items")
+        for key in candidate_keys:
+            value = structured_data.get(key)
+            if isinstance(value, list):
+                return _rows_from_structured_data(value, filename)
+
+        row = {key: str(value) for key, value in structured_data.items()}
+        if row:
+            row.setdefault("filename", filename)
+            rows.append(row)
+
+    return rows
+
+
 def extract_with_local_model(
     pdf_path: str,
     model_name: str = "datalab-to/chandra",
@@ -62,7 +92,11 @@ def extract_with_local_model(
     Returns:
         List of extracted row dictionaries
     """
-    from model_loaders import get_model_loader, is_model_supported
+    from model_loaders import (
+        get_model_capabilities,
+        get_model_loader,
+        is_model_supported,
+    )
 
     # Check if model is supported
     is_supported, reason = is_model_supported(model_name)
@@ -72,6 +106,19 @@ def extract_with_local_model(
             f"Model '{model_name}' is not supported: {reason}\n"
             f"Please install required dependencies or use a supported model."
         )
+
+    capabilities = get_model_capabilities(model_name)
+
+    if use_cpu and not capabilities.get("supports_cpu_mode", True):
+        logger.info("Model %s does not support CPU mode fallback; using default mode.", model_name)
+        use_cpu = False
+
+    if use_pretty and not capabilities.get("supports_pretty_output", False):
+        logger.info(
+            "Formatted output is not available for model %s; disabling pretty output.",
+            model_name,
+        )
+        use_pretty = False
 
     # Get the appropriate loader
     loader_func, loader_type = get_model_loader(model_name)
@@ -92,15 +139,25 @@ def extract_with_local_model(
         # Extract text using the model
         text, structured_data = loader_func(model_name, pdf_path, use_cpu)
 
-        # Parse the extracted text (reuse parsing logic from EasyOCR)
-        from extract_ec_data_easyocr import parse_table_rows
-
-        rows = parse_table_rows(text)
-
-        # Add filename
         filename = os.path.basename(pdf_path)
-        for row in rows:
-            row["filename"] = filename
+
+        rows = _rows_from_structured_data(structured_data, filename)
+
+        if not rows:
+            # Parse the extracted text (reuse parsing logic from EasyOCR)
+            from extract_ec_data_easyocr import parse_table_rows
+
+            rows = parse_table_rows(text)
+
+            for row in rows:
+                row.setdefault("filename", filename)
+
+        if not rows:
+            logger.debug(
+                "No rows parsed from model %s output; returning empty result for %s.",
+                model_name,
+                filename,
+            )
 
     # Normalize field names
     normalized_rows = []

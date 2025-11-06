@@ -67,7 +67,7 @@ The easiest way to use this tool is through the Streamlit web interface.
 📄 **Multiple Extraction Methods:**
 - **EasyOCR** - Fast CPU-based OCR, lightweight (~100MB models), quick setup, no API key needed
 - **PyTesseract** - Google's Tesseract OCR engine, fast and lightweight for text-based PDFs
-- **Local Model** - Download and run Chandra OCR locally, high accuracy, supports GPU/CPU
+- **Local Model** - Run Chandra or other Hugging Face OCR models locally with automatic CPU/GPU capability detection
 - **HuggingFace** - Cloud-based OCR via Inference API, requires API key
 - **Datalab API** - High-accuracy OCR via API, best for structured documents (recommended)
 - **Gemini AI** - Google's AI-powered extraction with context understanding and custom fields
@@ -98,7 +98,8 @@ The easiest way to use this tool is through the Streamlit web interface.
 ### Using the Streamlit App
 
 1. **Configure Extraction Method:**
-   - Select from: EasyOCR, HuggingFace, Datalab API, Gemini AI, or Deepseek AI
+   - Select from: EasyOCR, Local Model, HuggingFace, Datalab API, Gemini AI, or Deepseek AI
+   - For Local Model: Pick a local OCR model (Chandra, TrOCR, etc.) and toggle `Force CPU` / `Formatted Output` based on the detected capabilities
    - For HuggingFace: Enter model name (default: `datalab-to/chandra`)
    - For API methods: Enter and test your API keys
 

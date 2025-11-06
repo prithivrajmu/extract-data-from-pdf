@@ -208,3 +208,60 @@ def is_model_supported(model_name: str) -> tuple[bool, str]:
             False,
             f"Model '{model_name}' needs custom implementation. We can add support - please file an issue!",
         )
+
+
+def get_model_capabilities(model_name: str) -> dict[str, object]:
+    """Return capability flags and hints for a given local OCR model.
+
+    Args:
+        model_name: Model identifier selected by the user.
+
+    Returns:
+        Dictionary describing supported options and operational hints.
+    """
+
+    base_capabilities: dict[str, object] = {
+        "supports_cpu_mode": True,
+        "supports_gpu": True,
+        "supports_pretty_output": False,
+        "recommended_dpi": 300,
+        "requires_preprocessing": False,
+        "field_detection_method": "pytesseract",
+        "notes": [],
+    }
+
+    lowered = model_name.lower()
+
+    # Chandra models rely on the CLI tool and provide formatted output
+    if any(alias in lowered for alias in ("datalab-to/chandra", "chandra")):
+        base_capabilities.update(
+            {
+                "supports_pretty_output": True,
+                "field_detection_method": "chandra",
+                "notes": [
+                    "Optimised for structured EC PDFs",
+                    "First run downloads ~2GB model assets",
+                ],
+            }
+        )
+        return base_capabilities
+
+    # TrOCR family works well with GPU acceleration but needs text parsing
+    if "trocr" in lowered:
+        base_capabilities.update(
+            {
+                "supports_pretty_output": False,
+                "field_detection_method": "easyocr",
+                "notes": [
+                    "Uses transformers pipeline; ensure torch with CUDA for GPU",
+                ],
+            }
+        )
+        return base_capabilities
+
+    # Fallback for unknown models: treat as generic OCR via transformers
+    base_capabilities["supports_gpu"] = False
+    base_capabilities["notes"] = [
+        "Attempting generic transformers pipeline; results may vary",
+    ]
+    return base_capabilities

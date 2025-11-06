@@ -17,6 +17,7 @@ from model_info import (
     get_local_ocr_models,
     get_model_search_url,
 )
+from model_loaders import get_model_capabilities
 from test_api_keys import (
     test_datalab_api_key,
     test_deepseek_api_key,
@@ -64,7 +65,7 @@ def render_sidebar() -> dict:
                 "Requires Tesseract-OCR installed on system."
             ),
             "Local Model": (
-                "Download and run OCR models locally (Chandra OCR). "
+                "Download and run OCR models locally (example: Chandra OCR). "
                 "High accuracy for documents/tables. First run downloads ~2GB models. "
                 "Supports GPU/CPU."
             ),
@@ -280,18 +281,45 @@ def render_sidebar() -> dict:
                     "✅ Using HuggingFace API key - models are fetched automatically"
                 )
 
-            # Options for Chandra model
-            if local_model == "datalab-to/chandra":
+            # Model-specific configuration
+            capabilities = get_model_capabilities(local_model)
+
+            st.markdown("---")
+            st.subheader("⚙️ Local Model Options")
+
+            if capabilities.get("supports_cpu_mode", True):
                 use_cpu_mode = st.checkbox(
                     "Force CPU Mode",
-                    value=False,
+                    value=st.session_state.get("local_use_cpu_mode", False),
                     help="Force CPU usage even if GPU is available (slower but more stable)",
+                    key="local_use_cpu_mode",
                 )
+            else:
+                use_cpu_mode = False
+                st.session_state["local_use_cpu_mode"] = False
+                st.info("CPU fallback is not available for this model.")
+
+            if capabilities.get("supports_pretty_output", False):
                 use_pretty_output = st.checkbox(
                     "Use Formatted Output",
-                    value=False,
+                    value=st.session_state.get("local_use_pretty_output", False),
                     help="Use human-readable output formatting (filters technical details)",
+                    key="local_use_pretty_output",
                 )
+            else:
+                use_pretty_output = False
+                st.session_state["local_use_pretty_output"] = False
+
+            recommended_dpi = capabilities.get("recommended_dpi")
+            if recommended_dpi:
+                st.caption(f"Tip: Use {recommended_dpi} DPI renders for best accuracy.")
+
+            if not capabilities.get("supports_gpu", True):
+                st.caption("Note: GPU acceleration is not available for this model.")
+
+            notes = capabilities.get("notes", [])
+            for note in notes:
+                st.caption(f"Tip: {note}")
 
         # HuggingFace Model Selection
         hf_model = None

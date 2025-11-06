@@ -33,6 +33,7 @@ import time
 from typing import Any
 
 from logging_config import get_logger
+from model_loaders import get_model_capabilities
 
 logger = get_logger(__name__)
 
@@ -333,7 +334,7 @@ def detect_fields_with_ocr(pdf_path: str, ocr_method: str = "chandra") -> list[s
 
     Args:
         pdf_path: Path to PDF file
-        ocr_method: OCR method to use ('chandra', 'easyocr', 'pytesseract')
+        ocr_method: OCR method or model identifier
 
     Returns:
         List of detected field names
@@ -341,10 +342,32 @@ def detect_fields_with_ocr(pdf_path: str, ocr_method: str = "chandra") -> list[s
     if not os.path.exists(pdf_path):
         raise FileNotFoundError(f"PDF file not found: {pdf_path}")
 
+    # Map friendly/local identifiers to concrete OCR implementations
+    normalized_method = ocr_method.lower()
+    supported_methods = {"chandra", "easyocr", "pytesseract"}
+
+    if normalized_method in {"local", "local_model"}:
+        normalized_method = "chandra"
+    elif normalized_method not in supported_methods:
+        capabilities = get_model_capabilities(ocr_method)
+        mapped_method = capabilities.get("field_detection_method")
+        if mapped_method in supported_methods:
+            normalized_method = mapped_method
+            logger.debug(
+                "Field detection mapped model %s to %s",
+                ocr_method,
+                mapped_method,
+            )
+        else:
+            normalized_method = "pytesseract"
+            logger.debug(
+                "Field detection fallback to PyTesseract for model %s", ocr_method
+            )
+
     # Extract text using OCR
     text = None
 
-    if ocr_method == "chandra":
+    if normalized_method == "chandra":
         try:
             from extract_ec_data import extract_text_from_pdf
         except ImportError:
@@ -354,13 +377,13 @@ def detect_fields_with_ocr(pdf_path: str, ocr_method: str = "chandra") -> list[s
             text = result[0]
         else:
             text = result
-    elif ocr_method == "easyocr":
+    elif normalized_method == "easyocr":
         try:
             from extract_ec_data_easyocr import extract_text_from_pdf_easyocr
         except ImportError:
             from examples.extract_ec_data_easyocr import extract_text_from_pdf_easyocr
         text = extract_text_from_pdf_easyocr(pdf_path)
-    elif ocr_method == "pytesseract":
+    else:  # normalized_method == "pytesseract"
         try:
             from extract_ec_data_pytesseract import extract_text_from_pdf_pytesseract
         except ImportError:
@@ -368,8 +391,6 @@ def detect_fields_with_ocr(pdf_path: str, ocr_method: str = "chandra") -> list[s
                 extract_text_from_pdf_pytesseract,
             )
         text = extract_text_from_pdf_pytesseract(pdf_path)
-    else:
-        raise ValueError(f"Unsupported OCR method: {ocr_method}")
 
     if not text:
         return []
